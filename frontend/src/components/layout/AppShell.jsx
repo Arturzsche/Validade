@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
+import { useWhatsAppStatus } from '../../hooks/useWhatsAppStatus.js';
+import WhatsAppStatusBadge from '../whatsapp/WhatsAppStatusBadge.jsx';
+import WhatsAppModal from '../whatsapp/WhatsAppModal.jsx';
 
 const NAV = [
   { to: '/painel', label: 'Painel', icon: GaugeIcon },
@@ -15,6 +19,8 @@ const widths = { md: 'max-w-md', wide: 'max-w-5xl' };
 export default function AppShell({ title, actions, width = 'md', children }) {
   const { session, logout } = useAuth();
   const isOwner = session.user.role === 'OWNER';
+  const whatsapp = useWhatsAppStatus({ enabled: isOwner });
+  const [whatsAppOpen, setWhatsAppOpen] = useState(false);
 
   return (
     <div className={`min-h-dvh ${isOwner ? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}>
@@ -41,6 +47,7 @@ export default function AppShell({ title, actions, width = 'md', children }) {
                 ))}
               </nav>
             )}
+            {isOwner && <WhatsAppStatusBadge level={whatsapp.level} onClick={() => setWhatsAppOpen(true)} />}
             {actions}
             <button
               type="button"
@@ -54,6 +61,15 @@ export default function AppShell({ title, actions, width = 'md', children }) {
       </header>
 
       {children}
+
+      {isOwner && (
+        <WhatsAppModal
+          open={whatsAppOpen}
+          onClose={() => setWhatsAppOpen(false)}
+          status={whatsapp.status}
+          onStatus={whatsapp.setStatus}
+        />
+      )}
 
       {isOwner && (
         <nav

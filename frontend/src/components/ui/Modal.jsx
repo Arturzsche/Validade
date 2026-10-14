@@ -50,7 +50,7 @@ export default function Modal({ open, onClose, title, subtitle, children, dismis
               className="-mr-2 -mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate-500 active:bg-slate-100"
               aria-label="Fechar"
             >
-              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M6 6l12 12M18 6L6 18" strokeLinecap="round" />
               </svg>
             </button>

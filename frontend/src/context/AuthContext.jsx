@@ -50,7 +50,20 @@ export function AuthProvider({ children }) {
     [start],
   );
 
-  const value = useMemo(() => ({ session, login, register, logout }), [session, login, register, logout]);
+  /** Atualiza os dados da loja na sessão (ex: após PATCH /stores/me). */
+  const updateStore = useCallback((store) => {
+    setSession((current) => {
+      if (!current) return current;
+      const next = { ...current, store };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const value = useMemo(
+    () => ({ session, login, register, logout, updateStore }),
+    [session, login, register, logout, updateStore],
+  );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 

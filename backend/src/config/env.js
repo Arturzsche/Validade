@@ -24,6 +24,13 @@ const schema = z.object({
   ALERT_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
   WHATSAPP_AUTH_DIR: z.string().default('.wa-session'), // credenciais da sessão (NUNCA versionar)
   WHATSAPP_SEND_INTERVAL_MS: z.coerce.number().int().min(0).default(3000),
+  // Quem pode ver o QR / reconectar pelo painel. A sessão é ÚNICA para a plataforma
+  // (é o número remetente de todas as lojas) e o cadastro de loja é público: sem esta
+  // lista, ninguém gerencia pelo painel — evita que um cadastro qualquer sequestre o número.
+  WHATSAPP_ADMIN_EMAILS: z
+    .string()
+    .default('')
+    .transform((v) => v.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean)),
   WHATSAPP_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('warn'),
 });
 

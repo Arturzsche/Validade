@@ -3,11 +3,12 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { errorMessage } from '../lib/api.js';
 import Field from '../components/ui/Field.jsx';
 import Button from '../components/ui/Button.jsx';
+import { toE164BR } from '../lib/whatsapp.js';
 
 export default function LoginPage() {
   const { login, register } = useAuth();
   const [mode, setMode] = useState('login'); // login | register
-  const [form, setForm] = useState({ storeName: '', name: '', email: '', password: '' });
+  const [form, setForm] = useState({ storeName: '', name: '', email: '', password: '', whatsapp: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -19,7 +20,12 @@ export default function LoginPage() {
     setError(null);
     try {
       if (mode === 'login') await login(form.email, form.password);
-      else await register(form);
+      else {
+        const { whatsapp, ...data } = form;
+        const whatsappPhone = whatsapp.trim() ? toE164BR(whatsapp) : undefined;
+        if (whatsapp.trim() && !whatsappPhone) throw new Error('WhatsApp inválido: informe DDD + número');
+        await register({ ...data, ...(whatsappPhone && { whatsappPhone }) });
+      }
     } catch (err) {
       setError(errorMessage(err));
       setLoading(false);
@@ -44,6 +50,16 @@ export default function LoginPage() {
             <>
               <Field label="Nome da loja" required value={form.storeName} onChange={set('storeName')} autoComplete="organization" />
               <Field label="Seu nome" required value={form.name} onChange={set('name')} autoComplete="name" />
+              <Field
+                label="WhatsApp para receber os alertas"
+                type="tel"
+                inputMode="tel"
+                placeholder="(11) 99999-8888"
+                value={form.whatsapp}
+                onChange={set('whatsapp')}
+                autoComplete="tel"
+                hint="Opcional agora; dá para cadastrar depois no painel"
+              />
             </>
           )}
           <Field label="E-mail" type="email" required value={form.email} onChange={set('email')} autoComplete="email" inputMode="email" />

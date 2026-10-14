@@ -12,14 +12,16 @@ let request, app, prisma, runExpiryCheck, flushPendingAlerts, setNotifier, Notif
 const sent = [];
 
 /** Notificador falso com o contrato completo dos providers. */
-const fakeNotifier = ({ ready = true, send = async (msg) => void sent.push(msg) } = {}) => ({
+const fakeNotifier = ({ ready = true, qr = null, send = async (msg) => void sent.push(msg), restart = async () => {} } = {}) => ({
   name: 'fake',
   channel: 'WHATSAPP',
   start: async () => {},
   stop: async () => {},
   isReady: () => ready,
   onReady: () => () => {},
-  status: () => ({ provider: 'fake', state: ready ? 'open' : 'reconnecting' }),
+  status: () => ({ provider: 'fake', state: ready ? 'open' : qr ? 'waiting_qr' : 'reconnecting', me: ready ? '5511900000000@s.whatsapp.net' : null }),
+  getQr: () => (qr ? { qr, generatedAt: new Date() } : null),
+  restart,
   send,
 });
 
@@ -29,6 +31,7 @@ before(async () => {
     DATABASE_URL: DB,
     JWT_SECRET: 'test-secret-com-mais-de-16-chars',
     CRON_ENABLED: 'false',
+    WHATSAPP_ADMIN_EMAILS: 'Ana@Example.com',
     NODE_ENV: 'test',
   });
   ({ default: request } = await import('supertest'));
@@ -255,4 +258,44 @@ test('WhatsApp offline: alertas esperam sem gastar tentativa e saem na reconexã
   const down = await request(app).post('/api/notifications/test').set(auth);
   assert.equal(down.status, 503);
   assert.equal(down.body.error.code, 'NOTIFIER_UNAVAILABLE');
+});
+
+test('painel: status para todo dono; QR e reconexão só para WHATSAPP_ADMIN_EMAILS', { skip }, async () => {
+  const login = (email) => request(app).post('/api/auth/login').send({ email, password: 'senha-forte' });
+  const admin = { Authorization: `Bearer ${(await login('ana@example.com')).body.token}` }; // e-mail com caixa diferente
+  const other = await request(app).post('/api/auth/register').send({
+    storeName: 'Loja Curiosa', name: 'Zé', email: 'ze@example.com', password: 'senha-forte',
+  });
+  const owner = { Authorization: `Bearer ${other.body.token}` };
+  await request(app).post('/api/users').set(owner).send({ name: 'Caixa', email: 'caixa@example.com', password: 'senha-forte' });
+  const operator = { Authorization: `Bearer ${(await login('caixa@example.com')).body.token}` };
+
+  let restarts = 0;
+  setNotifier(fakeNotifier({ ready: false, qr: '2@abc,def,ghi', restart: async () => void (restarts += 1) }));
+
+  const st = await request(app).get('/api/notifications/status').set(owner);
+  assert.equal(st.status, 200);
+  assert.equal(st.body.state, 'waiting_qr');
+  assert.equal(st.body.canManage, false);
+  assert.equal(st.body.me, undefined, 'número remetente não vaza para outras lojas');
+  await request(app).get('/api/notifications/status').set(operator).expect(403);
+
+  await request(app).get('/api/notifications/whatsapp/qr').set(owner).expect(403);
+  await request(app).post('/api/notifications/whatsapp/reconnect').set(owner).expect(403);
+  assert.equal(restarts, 0);
+
+  const qr = await request(app).get('/api/notifications/whatsapp/qr').set(admin);
+  assert.equal(qr.status, 200);
+  assert.equal(qr.body.canManage, true);
+  assert.match(qr.body.qr, /^data:image\/png;base64,/);
+  assert.equal(qr.headers['cache-control'], 'no-store');
+
+  await request(app).post('/api/notifications/whatsapp/reconnect').set(admin).expect(200);
+  assert.equal(restarts, 1);
+
+  setNotifier(fakeNotifier());
+  const done = await request(app).get('/api/notifications/whatsapp/qr').set(admin);
+  assert.equal(done.body.state, 'open');
+  assert.equal(done.body.qr, null);
+  assert.equal(done.body.me, '5511900000000@s.whatsapp.net');
 });

@@ -84,6 +84,12 @@ backend/src/
 | POST | `/alerts/run` | dono | Executa agora a verificação do cron para a loja |
 | GET | `/notifications/status` | dono | Estado do canal (ex: `waiting_qr`, `open`, `reconnecting`) |
 | POST | `/notifications/test` | dono | Envia uma mensagem de teste ao WhatsApp da loja |
+| GET | `/notifications/whatsapp/qr` | admin* | QR atual como imagem PNG (painel reconecta sem terminal) |
+| POST | `/notifications/whatsapp/reconnect` | admin* | Gera novo QR / retoma a sessão agora |
+
+\* admin = e-mail listado em `WHATSAPP_ADMIN_EMAILS`. A sessão do WhatsApp é **uma só para a
+plataforma** e o cadastro de loja é público; sem essa lista ninguém vê o QR pelo painel, o que
+impede que um cadastro qualquer sequestre o número remetente de todas as lojas.
 
 ### Job diário (`src/jobs/expiryCheck.job.js`)
 
@@ -104,7 +110,8 @@ basta criar um novo arquivo em `providers/` e registrá-lo em `notifications/ind
 
 O provider padrão de produção usa **Baileys** (WebSocket do WhatsApp Web, sem navegador):
 
-- **QR no terminal** na primeira execução (`qrcode-terminal`); a sessão fica salva em `WHATSAPP_AUTH_DIR`.
+- **QR no terminal** (`qrcode-terminal`) **e no painel**: o indicador do WhatsApp no cabeçalho
+  (verde/amarelo/vermelho) abre um modal com o QR atualizado. A sessão fica salva em `WHATSAPP_AUTH_DIR`.
 - **Reconexão automática** com backoff exponencial (1s → 60s); logout feito pelo celular apaga a
   sessão e gera QR novo; se a sessão for aberta em outra instância, para de reconectar (evita disputa).
 - **Canal fora do ar não perde alerta**: fica `PENDING` sem consumir tentativa e é enviado
@@ -183,6 +190,10 @@ Fluxo: lê o código → `GET /products/barcode/:code` (em paralelo busca foto/n
 
 > A câmera só abre em **https** ou `localhost`. Para testar no celular pela rede: `npm run dev:https`
 > e acesse `https://<ip-do-computador>:5173` (aceite o certificado de desenvolvimento).
+
+## Deploy
+
+Passo a passo de produção (Neon + Railway com volume + Netlify, ≈ US$ 5/mês) em **[DEPLOY.md](DEPLOY.md)**.
 
 ## Rodando
 

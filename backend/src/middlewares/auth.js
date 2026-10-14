@@ -25,7 +25,7 @@ export async function authenticate(req, _res, next) {
   // Recarrega o usuário para respeitar desativação/troca de papel imediatamente
   const user = await prisma.user.findUnique({
     where: { id: payload.sub },
-    select: { id: true, storeId: true, role: true, name: true, active: true },
+    select: { id: true, storeId: true, role: true, name: true, email: true, active: true },
   });
   if (!user || !user.active) throw unauthorized('Usuário inativo');
 

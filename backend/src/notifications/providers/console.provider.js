@@ -9,6 +9,8 @@ export function createConsoleProvider() {
     isReady: () => true,
     onReady: () => () => {},
     status: () => ({ provider: 'console', state: 'open' }),
+    getQr: () => null, // simulação não tem pareamento
+    async restart() {},
     async send({ to, message }) {
       console.log(`\n📲 [simulação WhatsApp] para ${to ?? '(loja sem número cadastrado)'}\n${message}\n`);
       return { id: null };

@@ -9,6 +9,8 @@
 //   isReady(): boolean               pode enviar agora?
 //   onReady(fn): () => void          chamado a cada (re)conexão
 //   status(): object                 diagnóstico para a API
+//   getQr(): { qr, generatedAt }|null pareamento pendente (null se o provider não usa QR)
+//   restart(): Promise<void>         força reconexão imediata (botão no painel)
 //   send({ to, message }): Promise<{ id }>
 //     lança NotifierUnavailableError (transitório) ou RecipientError (destinatário)
 

@@ -12,6 +12,9 @@ const server = app.listen(env.PORT, () => {
 
 // Canal de notificação (NOTIFIER=whatsapp imprime o QR aqui no terminal na 1ª vez)
 const notifier = await startNotifier();
+if (env.NOTIFIER === 'whatsapp' && !env.WHATSAPP_ADMIN_EMAILS.length) {
+  console.warn('[whatsapp] ⚠️ WHATSAPP_ADMIN_EMAILS vazio: o QR só aparece neste terminal (o painel não poderá reconectar).');
+}
 
 // A cada (re)conexão, envia o que o cron gerou enquanto o canal estava fora do ar
 notifier.onReady(async () => {

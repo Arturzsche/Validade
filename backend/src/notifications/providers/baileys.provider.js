@@ -43,6 +43,8 @@ export function createBaileysProvider({
   let sock = null;
   let state = 'idle'; // idle | connecting | waiting_qr | open | reconnecting | replaced | stopped
   let me = null;
+  let qr = null; // último QR emitido (exposto ao painel para reconectar sem acesso ao terminal)
+  let qrAt = null;
   let lastError = null;
   let attempts = 0;
   let timer = null;
@@ -71,6 +73,7 @@ export function createBaileysProvider({
     const code = lastDisconnect?.error?.output?.statusCode;
     lastError = lastDisconnect?.error?.message ?? `desconectado (código ${code ?? '?'})`;
     me = null;
+    qr = null; // QR morre junto com o socket
     if (stopped) return;
 
     if (code === DisconnectReason.loggedOut) {
@@ -129,16 +132,19 @@ export function createBaileysProvider({
     socket.ev.on('creds.update', saveCreds);
     socket.ev.on('connection.update', (update) => {
       if (socket !== sock) return; // evento atrasado de um socket já descartado
-      const { connection, lastDisconnect, qr } = update;
+      const { connection, lastDisconnect } = update;
 
-      if (qr) {
+      if (update.qr) {
         state = 'waiting_qr';
+        qr = update.qr;
+        qrAt = new Date();
         log.info('\n[whatsapp] 📱 Escaneie o QR abaixo: WhatsApp > Configurações > Aparelhos conectados > Conectar aparelho\n');
-        printQr(qr);
+        printQr(update.qr);
       }
 
       if (connection === 'open') {
         state = 'open';
+        qr = null;
         attempts = 0;
         lastError = null;
         me = socket.user?.id ?? null;
@@ -195,6 +201,31 @@ export function createBaileysProvider({
         // socket já fechado
       }
     },
+
+    /**
+     * Força uma nova conexão agora (botão "Gerar novo QR" do painel): pula a espera do
+     * backoff e retoma uma sessão marcada como 'replaced'. Não faz nada se já estiver conectado.
+     */
+    async restart() {
+      if (state === 'open') return;
+      stopped = false;
+      attempts = 0;
+      clearTimeout(timer);
+      const previous = sock;
+      sock = null; // eventos do socket antigo passam a ser ignorados
+      try {
+        await previous?.end(undefined);
+      } catch {
+        // já estava fechado
+      }
+      await connect().catch((err) => {
+        lastError = err.message;
+        scheduleReconnect(nextBackoff());
+      });
+    },
+
+    /** QR atual (texto bruto do WhatsApp) ou null se não houver pareamento pendente. */
+    getQr: () => (qr && state === 'waiting_qr' ? { qr, generatedAt: qrAt } : null),
 
     isReady: () => state === 'open',
 

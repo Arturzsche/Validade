@@ -199,3 +199,37 @@ test('stop() fecha o socket sem deslogar e não reconecta mais', async () => {
   assert.equal(fake.sockets.length, 1);
   assert.equal(provider.status().state, 'stopped');
 });
+
+test('getQr expõe o QR pendente só enquanto aguarda pareamento', async () => {
+  const { provider, fake } = setup();
+  await provider.start();
+  assert.equal(provider.getQr(), null);
+  fake.last().emit('connection.update', { qr: 'QR-PAINEL' });
+  assert.equal(provider.getQr().qr, 'QR-PAINEL');
+  assert.ok(provider.getQr().generatedAt instanceof Date);
+  fake.last().emit('connection.update', { connection: 'open' });
+  assert.equal(provider.getQr(), null, 'conectado: QR some');
+  fake.last().emit('connection.update', closeWith(DisconnectReason.connectionLost));
+  assert.equal(provider.getQr(), null);
+  await provider.stop();
+});
+
+test('restart() pula o backoff, retoma sessão substituída e ignora o socket antigo', async () => {
+  const { provider, fake } = setup({ reconnect: { baseMs: 60_000, maxMs: 60_000 } });
+  await provider.start();
+  fake.last().emit('connection.update', closeWith(DisconnectReason.connectionReplaced));
+  assert.equal(provider.status().state, 'replaced');
+
+  await provider.restart();
+  assert.equal(fake.sockets.length, 2, 'nova conexão imediata, sem esperar 60s');
+  assert.equal(fake.sockets[0].ended, true);
+  fake.sockets[0].emit('connection.update', { connection: 'open' });
+  assert.equal(provider.isReady(), false, 'evento do socket antigo ignorado');
+
+  fake.last().emit('connection.update', { qr: 'QR-2' });
+  assert.equal(provider.getQr().qr, 'QR-2');
+  fake.last().emit('connection.update', { connection: 'open' });
+  await provider.restart();
+  assert.equal(fake.sockets.length, 2, 'conectado: restart não faz nada');
+  await provider.stop();
+});
