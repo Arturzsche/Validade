@@ -12,9 +12,10 @@ export async function executeExpiryCheck() {
       created: acc.created + (r.created ?? 0),
       sent: acc.sent + (r.sent ?? 0),
       failed: acc.failed + (r.failed ?? 0),
+      waiting: acc.waiting + (r.waiting ?? 0), // canal offline: saem na reconexão
       errors: acc.errors + (r.error ? 1 : 0),
     }),
-    { stores: 0, created: 0, sent: 0, failed: 0, errors: 0 },
+    { stores: 0, created: 0, sent: 0, failed: 0, waiting: 0, errors: 0 },
   );
   console.log(`[cron] concluída em ${Date.now() - startedAt}ms`, totals);
   return results;

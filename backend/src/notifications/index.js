@@ -1,20 +1,50 @@
-// Ponto único de envio. Hoje só existe o canal CONSOLE (simulação);
-// o Passo 4 pluga aqui o provedor de WhatsApp com a mesma interface:
-//   { channel: 'CONSOLE' | 'WHATSAPP', send({ to, message }) => Promise<void> }
-import { env } from '../config/env.js';
+// Ponto único de notificação. A regra de negócio (cron/alertas) só conhece esta
+// interface — trocar Baileys por Z-API, Evolution API ou a API oficial da Meta é
+// escrever um novo provider e registrá-lo abaixo, sem tocar no motor de alertas.
+//
+// Contrato de um provider:
+//   name: string                     identificador ('console', 'whatsapp', ...)
+//   channel: 'CONSOLE' | 'WHATSAPP'  gravado no histórico (expiry_alerts.channel)
+//   start(), stop(): Promise<void>   ciclo de vida (conexão, sessão)
+//   isReady(): boolean               pode enviar agora?
+//   onReady(fn): () => void          chamado a cada (re)conexão
+//   status(): object                 diagnóstico para a API
+//   send({ to, message }): Promise<{ id }>
+//     lança NotifierUnavailableError (transitório) ou RecipientError (destinatário)
 
-const consoleNotifier = {
-  channel: 'CONSOLE',
-  async send({ to, message }) {
-    console.log(`\n📲 [simulação WhatsApp] para ${to ?? '(loja sem número cadastrado)'}\n${message}\n`);
+import { env } from '../config/env.js';
+import { createConsoleProvider } from './providers/console.provider.js';
+
+const factories = {
+  console: async () => createConsoleProvider(),
+  whatsapp: async () => {
+    // Import dinâmico: Baileys só é carregado quando de fato usado
+    const { createBaileysProvider } = await import('./providers/baileys.provider.js');
+    return createBaileysProvider({
+      authDir: env.WHATSAPP_AUTH_DIR,
+      sendIntervalMs: env.WHATSAPP_SEND_INTERVAL_MS,
+      logLevel: env.WHATSAPP_LOG_LEVEL,
+    });
   },
 };
 
-const notifiers = { console: consoleNotifier };
-
-let current = notifiers[env.NOTIFIER];
+let current = createConsoleProvider();
 
 export const getNotifier = () => current;
+
+/** Cria e inicia o provider configurado em NOTIFIER. */
+export async function startNotifier(name = env.NOTIFIER) {
+  const factory = factories[name];
+  if (!factory) throw new Error(`NOTIFIER desconhecido: ${name}`);
+  current = await factory();
+  await current.start();
+  console.log(`[notificações] canal ativo: ${current.name}`);
+  return current;
+}
+
+export async function stopNotifier() {
+  await current.stop();
+}
 
 /** Permite trocar o canal em testes. */
 export function setNotifier(notifier) {

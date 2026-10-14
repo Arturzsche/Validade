@@ -7,6 +7,8 @@
 //  - Sem envio duplo: cada envio "reivindica" o alerta com um update condicional
 //    em `attempts` (lock otimista) antes de chamar o notificador.
 //  - Re-tentativa: alertas PENDING/FAILED são reenviados até ALERT_MAX_ATTEMPTS.
+//  - Canal fora do ar (ex: WhatsApp desconectado) não consome tentativa: o alerta
+//    fica pendente e sai em flushPendingAlerts() quando a conexão volta.
 
 import { Prisma } from '@prisma/client';
 import { env } from '../../config/env.js';
@@ -15,6 +17,7 @@ import { addDays, diffInDays, todayInTimeZone } from '../../lib/dates.js';
 import { alertLevelFor, batchRiskCents, fromCents } from '../../domain/expiry.js';
 import { buildAlertMessage } from '../../notifications/messages.js';
 import { getNotifier } from '../../notifications/index.js';
+import { NotifierUnavailableError } from '../../notifications/errors.js';
 
 const productSelect = { select: { id: true, name: true, barcode: true } };
 const activeBatch = { status: 'ACTIVE', quantity: { gt: 0 } };
@@ -66,6 +69,14 @@ async function deliver(alert, store, today) {
     });
     return 'sent';
   } catch (err) {
+    if (err instanceof NotifierUnavailableError) {
+      // Não é culpa do alerta: devolve a tentativa e mantém o status como estava
+      await prisma.expiryAlert.update({
+        where: { id: alert.id },
+        data: { attempts: { decrement: 1 }, error: err.message.slice(0, 500) },
+      });
+      return 'waiting';
+    }
     await prisma.expiryAlert.update({
       where: { id: alert.id },
       data: { status: 'FAILED', error: String(err?.message ?? err).slice(0, 500), message },
@@ -75,6 +86,9 @@ async function deliver(alert, store, today) {
 }
 
 async function deliverPending({ store, today, batchId }) {
+  const stats = { sent: 0, failed: 0, skipped: 0, waiting: 0 };
+  const notifier = getNotifier();
+
   const pending = await prisma.expiryAlert.findMany({
     where: {
       storeId: store.id,
@@ -87,8 +101,21 @@ async function deliverPending({ store, today, batchId }) {
     orderBy: { createdAt: 'asc' },
   });
 
-  const stats = { sent: 0, failed: 0, skipped: 0 };
-  for (const alert of pending) stats[await deliver(alert, store, today)] += 1;
+  if (!notifier.isReady()) {
+    // Canal offline: nada é marcado como falha; envia quando reconectar
+    stats.waiting = pending.length;
+    return stats;
+  }
+
+  for (const alert of pending) {
+    const result = await deliver(alert, store, today);
+    stats[result] += 1;
+    if (result === 'waiting') {
+      // Caiu no meio do lote de envios: o restante também espera a reconexão
+      stats.waiting += pending.length - (pending.indexOf(alert) + 1);
+      break;
+    }
+  }
   return stats;
 }
 
@@ -143,4 +170,25 @@ export async function checkBatchNow(batchId, now = new Date()) {
 
   await createAlert({ store, batch, level, today });
   return deliverPending({ store, today, batchId });
+}
+
+/**
+ * Envia tudo o que ficou pendente (ex: alertas gerados pelo cron enquanto o WhatsApp
+ * estava desconectado). Chamado a cada (re)conexão do canal de notificação.
+ */
+export async function flushPendingAlerts(now = new Date()) {
+  const stores = await prisma.store.findMany({
+    where: { alerts: { some: { status: { in: ['PENDING', 'FAILED'] }, attempts: { lt: env.ALERT_MAX_ATTEMPTS } } } },
+  });
+  const results = [];
+  for (const store of stores) {
+    try {
+      const today = todayInTimeZone(store.timezone, now);
+      results.push({ storeId: store.id, ...(await deliverPending({ store, today })) });
+    } catch (err) {
+      console.error(`[alerts] falha ao reenviar pendentes da loja ${store.id}`, err);
+      results.push({ storeId: store.id, error: String(err?.message ?? err) });
+    }
+  }
+  return results;
 }

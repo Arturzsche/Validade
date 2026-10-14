@@ -8,8 +8,20 @@ import { addDays, toDateOnly, todayInTimeZone } from '../src/lib/dates.js';
 const DB = process.env.TEST_DATABASE_URL;
 const skip = DB ? false : 'defina TEST_DATABASE_URL para rodar a integração';
 
-let request, app, prisma, runExpiryCheck, setNotifier;
+let request, app, prisma, runExpiryCheck, flushPendingAlerts, setNotifier, NotifierUnavailableError;
 const sent = [];
+
+/** Notificador falso com o contrato completo dos providers. */
+const fakeNotifier = ({ ready = true, send = async (msg) => void sent.push(msg) } = {}) => ({
+  name: 'fake',
+  channel: 'WHATSAPP',
+  start: async () => {},
+  stop: async () => {},
+  isReady: () => ready,
+  onReady: () => () => {},
+  status: () => ({ provider: 'fake', state: ready ? 'open' : 'reconnecting' }),
+  send,
+});
 
 before(async () => {
   if (!DB) return;
@@ -21,11 +33,12 @@ before(async () => {
   });
   ({ default: request } = await import('supertest'));
   ({ prisma } = await import('../src/lib/prisma.js'));
-  ({ runExpiryCheck } = await import('../src/modules/alerts/alerts.service.js'));
+  ({ runExpiryCheck, flushPendingAlerts } = await import('../src/modules/alerts/alerts.service.js'));
+  ({ NotifierUnavailableError } = await import('../src/notifications/errors.js'));
   ({ setNotifier } = await import('../src/notifications/index.js'));
   app = (await import('../src/app.js')).createApp();
 
-  setNotifier({ channel: 'CONSOLE', send: async (msg) => void sent.push(msg) });
+  setNotifier(fakeNotifier());
   await prisma.$executeRawUnsafe('TRUNCATE stores, users, products, batches, expiry_alerts CASCADE');
 });
 
@@ -169,14 +182,14 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
   assert.equal(dash2.body.zones.red.batches, 1);
 
   // --- Falha de envio é registrada e re-tentada
-  setNotifier({ channel: 'CONSOLE', send: async () => { throw new Error('provedor fora do ar'); } });
+  setNotifier(fakeNotifier({ send: async () => { throw new Error('erro do provedor'); } }));
   await request(app)
     .post('/api/batches')
     .set(operator)
     .send({ barcode: '7894900011517', expiryDate: day(1), quantity: 2 })
     .expect(201);
   await waitFor(async () => (await prisma.expiryAlert.count({ where: { status: 'FAILED' } })) === 1);
-  setNotifier({ channel: 'CONSOLE', send: async (msg) => void sent.push(msg) });
+  setNotifier(fakeNotifier());
   const [retry] = await runExpiryCheck();
   assert.equal(retry.sent, 1);
   const alerts = await request(app).get('/api/alerts?status=FAILED').set(owner);
@@ -190,4 +203,56 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
   await request(app).get(`/api/batches/${red.body.batch.id}`).set(otherAuth).expect(404);
   const otherList = await request(app).get('/api/batches').set(otherAuth);
   assert.equal(otherList.body.total, 0);
+});
+
+test('WhatsApp offline: alertas esperam sem gastar tentativa e saem na reconexão', { skip }, async () => {
+  const reg = await request(app).post('/api/auth/register').send({
+    storeName: 'Farmácia Central', whatsappPhone: '+5511988887777', name: 'Ana', email: 'ana@example.com', password: 'senha-forte',
+  });
+  const auth = { Authorization: `Bearer ${reg.body.token}` };
+  const storeId = reg.body.store.id;
+  const alertsOf = () => prisma.expiryAlert.findMany({ where: { storeId }, orderBy: { createdAt: 'asc' } });
+
+  // 1) Canal desconectado (ex: aguardando QR) no momento do cron
+  setNotifier(fakeNotifier({ ready: false }));
+  await request(app).post('/api/batches').set(auth)
+    .send({ barcode: '7896004000015', expiryDate: day(3), quantity: 20, product: { name: 'Dipirona 500mg', price: 12.9, costPrice: 5.4 } })
+    .expect(201);
+  await new Promise((r) => setTimeout(r, 200)); // alerta imediato roda em segundo plano
+  const [cron] = await runExpiryCheck({ storeId });
+  assert.equal(cron.waiting, 1);
+  let [alert] = await alertsOf();
+  assert.equal(alert.status, 'PENDING');
+  assert.equal(alert.attempts, 0, 'canal offline não consome tentativa');
+  assert.equal(alert.channel, 'WHATSAPP');
+
+  // 2) Caiu no meio do envio: devolve a tentativa
+  setNotifier(fakeNotifier({ send: async () => { throw new NotifierUnavailableError('caiu'); } }));
+  const [mid] = await runExpiryCheck({ storeId });
+  assert.equal(mid.waiting, 1);
+  [alert] = await alertsOf();
+  assert.equal(alert.status, 'PENDING');
+  assert.equal(alert.attempts, 0);
+
+  // 3) Reconectou: o flush envia o pendente
+  const delivered = [];
+  setNotifier(fakeNotifier({ send: async (msg) => void delivered.push(msg) }));
+  const flushed = await flushPendingAlerts();
+  assert.equal(flushed.find((r) => r.storeId === storeId).sent, 1);
+  [alert] = await alertsOf();
+  assert.equal(alert.status, 'SENT');
+  assert.equal(delivered[0].to, '+5511988887777');
+  assert.match(delivered[0].message, /Dipirona 500mg/);
+
+  // 4) Endpoint de diagnóstico e de mensagem de teste
+  const status = await request(app).get('/api/notifications/status').set(auth);
+  assert.equal(status.body.state, 'open');
+  const ping = await request(app).post('/api/notifications/test').set(auth);
+  assert.equal(ping.status, 200);
+  assert.match(delivered[1].message, /Tudo certo/);
+
+  setNotifier(fakeNotifier({ ready: false, send: async () => { throw new NotifierUnavailableError('aguardando QR'); } }));
+  const down = await request(app).post('/api/notifications/test').set(auth);
+  assert.equal(down.status, 503);
+  assert.equal(down.body.error.code, 'NOTIFIER_UNAVAILABLE');
 });

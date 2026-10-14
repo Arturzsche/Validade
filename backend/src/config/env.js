@@ -19,9 +19,12 @@ const schema = z.object({
   CRON_SCHEDULE: z.string().default('0 8 * * *'), // todo dia às 08:00
   CRON_TIMEZONE: z.string().default('America/Sao_Paulo'),
 
-  // Notificações (Passo 4 adiciona "whatsapp")
-  NOTIFIER: z.enum(['console']).default('console'),
+  // Notificações: console (simulação) | whatsapp (Baileys, QR no terminal)
+  NOTIFIER: z.enum(['console', 'whatsapp']).default('console'),
   ALERT_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
+  WHATSAPP_AUTH_DIR: z.string().default('.wa-session'), // credenciais da sessão (NUNCA versionar)
+  WHATSAPP_SEND_INTERVAL_MS: z.coerce.number().int().min(0).default(3000),
+  WHATSAPP_LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('warn'),
 });
 
 const parsed = schema.safeParse(process.env);

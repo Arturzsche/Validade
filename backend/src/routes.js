@@ -7,6 +7,7 @@ import productRoutes from './modules/products/products.routes.js';
 import batchRoutes from './modules/batches/batches.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import alertRoutes from './modules/alerts/alerts.routes.js';
+import notificationRoutes from './modules/notifications/notifications.routes.js';
 
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/products', productRoutes);
 router.use('/batches', batchRoutes);
 router.use('/dashboard', dashboardRoutes);
 router.use('/alerts', alertRoutes);
+router.use('/notifications', notificationRoutes);
 
 export default router;

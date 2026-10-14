@@ -10,7 +10,7 @@ entrada rápida de lotes por código de barras, dashboard "semáforo" e alertas 
 - [x] **Passo 3** — Frontend (React + Vite + Tailwind)
   - [x] Tela de leitura de código de barras e entrada rápida
   - [x] Dashboard semáforo do dono com queima de estoque
-- [ ] Passo 4 — Integração WhatsApp
+- [x] **Passo 4** — Integração WhatsApp (Baileys, QR no terminal, reconexão automática)
 
 ## Modelo de dados
 
@@ -53,7 +53,12 @@ backend/src/
 │   ├── batches/              # entrada rápida + CRUD de lotes
 │   ├── dashboard/            # resumo do semáforo
 │   └── alerts/               # motor de alertas (usado pelo cron) + histórico
-├── notifications/            # canal de envio (console hoje, WhatsApp no Passo 4) e textos
+├── notifications/
+│   ├── index.js              # contrato do provider + registro (NOTIFIER=console|whatsapp)
+│   ├── providers/            # console.provider.js · baileys.provider.js (trocar por Z-API/Evolution = novo arquivo aqui)
+│   ├── errors.js             # NotifierUnavailableError (espera) × RecipientError (falha)
+│   ├── sendQueue.js          # intervalo mínimo entre mensagens (anti-bloqueio)
+│   └── messages.js           # textos dos alertas
 └── jobs/                     # agendamento diário e execução avulsa
 ```
 
@@ -77,6 +82,8 @@ backend/src/
 | GET | `/dashboard/summary?limit=` | dono | Totais por cor, valor em risco e lista de ação (amarelos + vermelhos por validade) |
 | GET | `/alerts?level=&status=` | dono | Histórico de notificações |
 | POST | `/alerts/run` | dono | Executa agora a verificação do cron para a loja |
+| GET | `/notifications/status` | dono | Estado do canal (ex: `waiting_qr`, `open`, `reconnecting`) |
+| POST | `/notifications/test` | dono | Envia uma mensagem de teste ao WhatsApp da loja |
 
 ### Job diário (`src/jobs/expiryCheck.job.js`)
 
@@ -88,6 +95,49 @@ Todo dia às 08:00 (`CRON_SCHEDULE`, fuso `CRON_TIMEZONE`), para cada loja:
 
 Lotes que já entram na zona vermelha disparam o alerta **na hora**, sem esperar o cron.
 Também é possível rodar avulso com `npm run job:expiry`.
+
+## WhatsApp (Passo 4)
+
+Os alertas saem por um provider plugável (`src/notifications`). O motor de alertas só conhece o
+contrato `send / isReady / onReady / status` — para migrar para Z-API, Evolution API ou a API oficial,
+basta criar um novo arquivo em `providers/` e registrá-lo em `notifications/index.js`.
+
+O provider padrão de produção usa **Baileys** (WebSocket do WhatsApp Web, sem navegador):
+
+- **QR no terminal** na primeira execução (`qrcode-terminal`); a sessão fica salva em `WHATSAPP_AUTH_DIR`.
+- **Reconexão automática** com backoff exponencial (1s → 60s); logout feito pelo celular apaga a
+  sessão e gera QR novo; se a sessão for aberta em outra instância, para de reconectar (evita disputa).
+- **Canal fora do ar não perde alerta**: fica `PENDING` sem consumir tentativa e é enviado
+  automaticamente quando a conexão volta.
+- Fila com intervalo mínimo entre mensagens (`WHATSAPP_SEND_INTERVAL_MS`, padrão 3s).
+
+> ⚠️ Baileys é um cliente **não oficial**: o WhatsApp pode banir números que disparam em volume.
+> Use um chip dedicado. Apenas **uma** instância do servidor pode manter a sessão aberta.
+
+### Teste de disparo real
+
+```bash
+cd backend
+# .env: NOTIFIER=whatsapp  (e as URLs do banco / JWT_SECRET)
+# Opcional, para ver o cron disparar rápido: CRON_SCHEDULE="*/1 * * * *"
+npm run dev
+```
+
+1. O QR aparece no terminal → no celular de testes: **WhatsApp › Aparelhos conectados › Conectar aparelho**.
+   Aguarde `[whatsapp] ✅ Conectado como ...`.
+2. Cadastre a loja com o número que vai **receber** os alertas (pode ser outro celular):
+   ```bash
+   curl -X POST localhost:3333/api/auth/register -H 'content-type: application/json' \
+     -d '{"storeName":"Minha Loja","whatsappPhone":"+5511999998888","name":"Dono","email":"dono@teste.com","password":"12345678"}'
+   ```
+   (guarde o `token` da resposta; para trocar o número depois: `PATCH /api/stores/me`)
+3. Mensagem de teste: `curl -X POST localhost:3333/api/notifications/test -H "Authorization: Bearer $TOKEN"`
+4. Alerta real: registre pela tela de Entrada um lote vencendo em menos de 15 dias — o alerta sai na hora.
+   Ou rode o cron sob demanda: `curl -X POST localhost:3333/api/alerts/run -H "Authorization: Bearer $TOKEN"`.
+5. Teste de queda: desligue a internet do servidor por alguns segundos e veja a reconexão no log;
+   alertas gerados nesse intervalo saem sozinhos quando voltar.
+
+Em Railway/Render, monte um **volume persistente** em `WHATSAPP_AUTH_DIR`; sem ele o QR é pedido a cada deploy.
 
 ## Frontend
 
