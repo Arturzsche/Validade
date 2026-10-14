@@ -134,7 +134,12 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
   assert.equal(dash.body.zones.red.batches, 2);
   assert.equal(dash.body.zones.red.expired.batches, 1);
   assert.equal(dash.body.valueAtRisk, 48.8); // 16,80 (custo) + 4 x 8,00 (fallback preço)
-  assert.equal(dash.body.topRisk[0].product.name, 'Pão de Forma');
+  // Lista de ação: amarelos + vermelhos, ordenada por validade, com preço atual para a promoção
+  assert.deepEqual(dash.body.actionItems.map((b) => b.semaphore), ['red', 'red', 'yellow']);
+  assert.equal(dash.body.actionItems[0].product.name, 'Pão de Forma');
+  assert.equal(dash.body.actionItems[1].product.price, 4.99);
+  assert.equal(dash.body.actionItemsTotal, 3);
+  assert.equal(dash.body.promo.suggestedDiscountPct, 30);
 
   // --- Filtros do CRUD
   const reds = await request(app).get('/api/batches?semaphore=red').set(operator);

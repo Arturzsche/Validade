@@ -33,7 +33,16 @@ export function serializeBatch(batch, store, today) {
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
     ...describeBatch(b, store, today), // expiryDate, daysToExpiry, semaphore, valueAtRisk...
-    ...(product && { product: { id: product.id, barcode: product.barcode, name: product.name, brand: product.brand, imageUrl: product.imageUrl } }),
+    ...(product && {
+      product: {
+        id: product.id,
+        barcode: product.barcode,
+        name: product.name,
+        brand: product.brand,
+        imageUrl: product.imageUrl,
+        ...(product.price !== undefined && { price: num(product.price) }),
+      },
+    }),
   };
 }
 

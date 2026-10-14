@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useQuickEntry } from '../hooks/useQuickEntry.js';
-import AppHeader from '../components/layout/AppHeader.jsx';
+import AppShell from '../components/layout/AppShell.jsx';
 import BarcodeScanner from '../components/scan/BarcodeScanner.jsx';
 import ManualCodeModal from '../components/scan/ManualCodeModal.jsx';
 import NewProductModal from '../components/scan/NewProductModal.jsx';
@@ -33,9 +33,7 @@ export default function ScanPage() {
   const { store } = session;
 
   return (
-    <div className="min-h-dvh">
-      <AppHeader title="Entrada de lotes" />
-
+    <AppShell title="Entrada de lotes">
       <main className="mx-auto max-w-md space-y-5 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         {flow.step === 'scan' && (
           <>
@@ -94,6 +92,6 @@ export default function ScanPage() {
       />
 
       <Toast toast={toast} onDismiss={dismissToast} />
-    </div>
+    </AppShell>
   );
 }

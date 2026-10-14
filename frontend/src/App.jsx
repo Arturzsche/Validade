@@ -2,10 +2,20 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
+import DashboardPage from './pages/DashboardPage.jsx';
 
-function RequireAuth({ children }) {
+function RequireAuth({ role, children }) {
   const { session } = useAuth();
-  return session ? children : <Navigate to="/login" replace />;
+  if (!session) return <Navigate to="/login" replace />;
+  if (role && session.user.role !== role) return <Navigate to="/" replace />;
+  return children;
+}
+
+/** Dono cai no Painel; operador cai direto na Entrada de lotes. */
+function Home() {
+  const { session } = useAuth();
+  if (!session) return <Navigate to="/login" replace />;
+  return <Navigate to={session.user.role === 'OWNER' ? '/painel' : '/entrada'} replace />;
 }
 
 export default function App() {
@@ -14,15 +24,22 @@ export default function App() {
     <Routes>
       <Route path="/login" element={session ? <Navigate to="/" replace /> : <LoginPage />} />
       <Route
-        path="/"
+        path="/painel"
+        element={
+          <RequireAuth role="OWNER">
+            <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/entrada"
         element={
           <RequireAuth>
             <ScanPage />
           </RequireAuth>
         }
       />
-      {/* /dashboard entra no próximo passo */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Home />} />
     </Routes>
   );
 }

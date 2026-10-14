@@ -13,21 +13,24 @@ router.use(requireOwner);
 
 const emptyZone = () => ({ batches: 0, units: 0, valueCents: 0 });
 
-// GET /api/dashboard/summary?top=10 — painel semáforo do dono
-router.get('/summary', validate({ query: z.object({ top: z.coerce.number().int().min(1).max(50).default(10) }) }), async (req, res) => {
+const summaryQuery = z.object({ limit: z.coerce.number().int().min(1).max(500).default(200) });
+
+// GET /api/dashboard/summary?limit=200 — painel semáforo do dono
+router.get('/summary', validate({ query: summaryQuery }), async (req, res) => {
   const { store, today } = await getStoreContext(req.user.storeId);
 
   // Lojas pequenas têm centenas/poucos milhares de lotes ativos: agregamos em memória
   // reaproveitando a MESMA regra de classificação usada no resto da API.
   const batches = await prisma.batch.findMany({
     where: { storeId: store.id, status: 'ACTIVE', quantity: { gt: 0 } },
-    include: { product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true } } },
+    // price atual do produto: base da promoção sugerida (o snapshot do lote fica para o histórico)
+    include: { product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true, price: true } } },
     orderBy: { expiryDate: 'asc' },
   });
 
   const zones = { [Semaphore.RED]: emptyZone(), [Semaphore.YELLOW]: emptyZone(), [Semaphore.GREEN]: emptyZone() };
   const expired = emptyZone();
-  const redBatches = [];
+  const actionBatches = []; // amarelos + vermelhos: o dono não precisa ver o que está seguro
 
   for (const batch of batches) {
     const { semaphore, expired: isExpired } = describeBatch(batch, store, today);
@@ -41,7 +44,7 @@ router.get('/summary', validate({ query: z.object({ top: z.coerce.number().int()
       expired.units += batch.quantity;
       expired.valueCents += cents;
     }
-    if (semaphore === Semaphore.RED) redBatches.push(batch);
+    if (semaphore !== Semaphore.GREEN) actionBatches.push(batch);
   }
 
   const out = ({ valueCents, ...z }) => ({ ...z, value: fromCents(valueCents) });
@@ -56,8 +59,10 @@ router.get('/summary', validate({ query: z.object({ top: z.coerce.number().int()
       green: out(zones.green),
     },
     valueAtRisk: fromCents(zones.red.valueCents),
-    // Prioridade de ação: o que vence primeiro aparece primeiro
-    topRisk: redBatches.slice(0, req.valid.query.top).map((b) => serializeBatch(b, store, today)),
+    promo: { suggestedDiscountPct: store.suggestedDiscountPct },
+    // Lista de ação: já vem ordenada pelo que vence primeiro (orderBy expiryDate)
+    actionItems: actionBatches.slice(0, req.valid.query.limit).map((b) => serializeBatch(b, store, today)),
+    actionItemsTotal: actionBatches.length,
   });
 });
 
