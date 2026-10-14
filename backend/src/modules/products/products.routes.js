@@ -14,6 +14,7 @@ export const productInput = z.object({
   name: z.string().trim().min(2).max(120),
   brand: z.string().trim().max(60).optional(),
   category: z.string().trim().max(60).optional(),
+  imageUrl: z.url({ protocol: /^https$/ }).max(500).optional(),
   price: money,
   costPrice: money.optional(),
 });

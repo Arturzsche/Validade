@@ -7,7 +7,9 @@ entrada rápida de lotes por código de barras, dashboard "semáforo" e alertas 
 
 - [x] **Passo 1** — Modelagem do banco (`backend/prisma/schema.prisma`)
 - [x] **Passo 2** — Backend (Express, CRUD de lotes, cron diário, alertas simulados no console)
-- [ ] Passo 3 — Frontend (React + Vite + Tailwind)
+- [~] **Passo 3** — Frontend (React + Vite + Tailwind)
+  - [x] Tela de leitura de código de barras e entrada rápida
+  - [ ] Dashboard semáforo do dono
 - [ ] Passo 4 — Integração WhatsApp
 
 ## Modelo de dados
@@ -21,7 +23,7 @@ Store (loja / tenant) 1 ──< User
 |-----------------|-------|
 | `stores`        | Tenant. Guarda WhatsApp de destino, fuso e os limites do semáforo (`warning_days`=30, `critical_days`=15). |
 | `users`         | `OWNER` (dashboard/financeiro) ou `OPERATOR` (só registra lotes). 1 usuário = 1 loja. |
-| `products`      | Catálogo por loja; `barcode` único **dentro da loja**. `price` (venda) e `cost_price` (custo, opcional). |
+| `products`      | Catálogo por loja; `barcode` único **dentro da loja**. `price` (venda), `cost_price` (custo, opcional) e `image_url` (foto). |
 | `batches`       | Lote: `expiry_date`, `initial_quantity`, `quantity` (saldo), snapshots `unit_price` e `unit_cost`. |
 | `expiry_alerts` | Histórico de alertas. `UNIQUE(batch_id, level)` garante que o cron não envie duplicado. |
 
@@ -87,6 +89,36 @@ Todo dia às 08:00 (`CRON_SCHEDULE`, fuso `CRON_TIMEZONE`), para cada loja:
 Lotes que já entram na zona vermelha disparam o alerta **na hora**, sem esperar o cron.
 Também é possível rodar avulso com `npm run job:expiry`.
 
+## Frontend
+
+```
+frontend/src/
+├── pages/
+│   ├── LoginPage.jsx           # login / cadastro da loja
+│   └── ScanPage.jsx            # Entrada Rápida (operador)
+├── hooks/useQuickEntry.js      # máquina de estados: scan -> lookup -> form -> salvar
+├── components/
+│   ├── scan/
+│   │   ├── BarcodeScanner.jsx  # câmera traseira + zxing (EAN-13/8, UPC, CODE-128), lanterna
+│   │   ├── ManualCodeModal.jsx # plano B: digitar o código
+│   │   ├── ProductCard.jsx     # foto + nome para conferência
+│   │   ├── BatchEntryForm.jsx  # validade (DD/MM/AAAA ou MM/AAAA) + quantidade, prévia do semáforo
+│   │   ├── NewProductModal.jsx # mini-cadastro (nome, custo, venda) no 404/422
+│   │   └── RecentEntries.jsx   # últimos lançamentos da sessão
+│   ├── ui/                     # Button, Modal (bottom sheet), Field, MoneyInput, QuantityStepper...
+│   └── layout/AppHeader.jsx
+├── context/AuthContext.jsx     # sessão (JWT) persistida
+└── lib/                        # api, datas, Open Food Facts, feedback (bip/vibração)
+```
+
+Fluxo: lê o código → `GET /products/barcode/:code` (em paralelo busca foto/nome no Open Food Facts)
+→ produto existe: mostra o card · não existe: abre o mini-cadastro já com o nome sugerido
+→ operador digita validade + quantidade → `POST /batches` (cria produto + lote juntos se for novo)
+→ se a API responder `422 PRODUCT_NOT_FOUND`, abre o mini-cadastro e salva sozinho ao confirmar.
+
+> A câmera só abre em **https** ou `localhost`. Para testar no celular pela rede: `npm run dev:https`
+> e acesse `https://<ip-do-computador>:5173` (aceite o certificado de desenvolvimento).
+
 ## Rodando
 
 ```bash
@@ -95,7 +127,14 @@ cp .env.example .env   # preencha com as URLs do Supabase e um JWT_SECRET
 npm install
 npm run prisma:deploy
 npm run dev            # http://localhost:3333
+
+cd ../frontend
+npm install
+npm run dev            # http://localhost:5173 (proxy /api -> :3333)
 ```
+
+Em produção, defina `VITE_API_URL` (ex: `https://api.seudominio.com/api`) no build do frontend
+e inclua a origem do frontend em `CORS_ORIGIN` no backend.
 
 Testes: `npm test` roda os unitários; com `TEST_DATABASE_URL=postgresql://...` roda também o
 teste ponta a ponta (o banco de teste é **truncado** — nunca use o de produção).

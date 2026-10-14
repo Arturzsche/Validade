@@ -21,7 +21,7 @@ router.get('/summary', validate({ query: z.object({ top: z.coerce.number().int()
   // reaproveitando a MESMA regra de classificação usada no resto da API.
   const batches = await prisma.batch.findMany({
     where: { storeId: store.id, status: 'ACTIVE', quantity: { gt: 0 } },
-    include: { product: { select: { id: true, barcode: true, name: true, brand: true } } },
+    include: { product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true } } },
     orderBy: { expiryDate: 'asc' },
   });
 

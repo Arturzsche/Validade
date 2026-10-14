@@ -119,6 +119,7 @@ model Product {
   name     String
   brand    String?
   category String?
+  imageUrl String? @map("image_url") // foto (ex: Open Food Facts) exibida após a leitura
 
   // Preço de venda unitário — base do cálculo de "valor em risco"
   price     Decimal  @db.Decimal(10, 2)
