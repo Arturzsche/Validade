@@ -1,0 +1,204 @@
+// =============================================================================
+// Validade — Schema do banco de dados (PASSO 1)
+// PostgreSQL (Supabase) + Prisma ORM
+//
+// Modelo multi-tenant: toda entidade de negócio pertence a uma Store (loja).
+// O status "semáforo" (verde/amarelo/vermelho) NÃO é persistido — ele é
+// derivado de `Batch.expiryDate` + limites configurados em `Store`, para
+// nunca ficar desatualizado. O que persistimos é o HISTÓRICO de alertas
+// (`ExpiryAlert`), garantindo que o cron diário não dispare duplicado.
+// =============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // Supabase: connection pooler (porta 6543, ?pgbouncer=true)
+  directUrl = env("DIRECT_URL")   // Supabase: conexão direta (porta 5432) usada pelas migrations
+}
+
+// -----------------------------------------------------------------------------
+// Enums
+// -----------------------------------------------------------------------------
+
+enum UserRole {
+  OWNER    // Dono: vê dashboard, valores financeiros, configura a loja
+  OPERATOR // Operador de caixa/estoque: só registra lotes
+}
+
+enum BatchStatus {
+  ACTIVE     // Em estoque, sendo monitorado
+  SOLD_OUT   // Lote zerado (vendido)
+  DISCARDED  // Descartado / perda registrada
+}
+
+enum AlertLevel {
+  WARNING  // Entrou na zona amarela
+  CRITICAL // Entrou na zona vermelha -> sugere promoção
+  EXPIRED  // Venceu com saldo em estoque
+}
+
+enum AlertChannel {
+  CONSOLE  // Simulação (MVP)
+  WHATSAPP
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+// -----------------------------------------------------------------------------
+// Tenant: Loja
+// -----------------------------------------------------------------------------
+
+model Store {
+  id        String  @id @default(uuid()) @db.Uuid
+  name      String
+  document  String? @unique // CNPJ (somente dígitos)
+  segment   String? // "mercadinho" | "farmacia" | "petshop" | ...
+
+  // Destino dos alertas automáticos (formato E.164, ex: +5511999998888)
+  whatsappPhone String? @map("whatsapp_phone")
+  timezone      String  @default("America/Sao_Paulo")
+
+  // Limites do semáforo (em dias). Padrão do MVP: amarelo <= 30, vermelho < 15
+  warningDays  Int @default(30) @map("warning_days")
+  criticalDays Int @default(15) @map("critical_days")
+
+  // Desconto sugerido na mensagem de queima de estoque (%)
+  suggestedDiscountPct Int @default(30) @map("suggested_discount_pct")
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  users    User[]
+  products Product[]
+  batches  Batch[]
+  alerts   ExpiryAlert[]
+
+  @@map("stores")
+}
+
+// -----------------------------------------------------------------------------
+// Usuários
+// -----------------------------------------------------------------------------
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  storeId      String   @map("store_id") @db.Uuid
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(OPERATOR)
+  phone        String? // WhatsApp pessoal (opcional, para alertas individuais no futuro)
+  active       Boolean  @default(true)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  store          Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdBatches Batch[] @relation("BatchCreatedBy")
+
+  @@index([storeId])
+  @@map("users")
+}
+
+// -----------------------------------------------------------------------------
+// Catálogo de produtos (por loja)
+// -----------------------------------------------------------------------------
+
+model Product {
+  id      String @id @default(uuid()) @db.Uuid
+  storeId String @map("store_id") @db.Uuid
+
+  barcode  String // EAN-13 / EAN-8 / UPC lido pela câmera
+  name     String
+  brand    String?
+  category String?
+
+  // Preço de venda unitário — base do cálculo de "valor em risco"
+  price     Decimal  @db.Decimal(10, 2)
+  // Custo unitário (opcional) — permite mostrar prejuízo real além do faturamento perdido
+  costPrice Decimal? @map("cost_price") @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  batches Batch[]
+
+  // O mesmo EAN pode existir em lojas diferentes, mas é único dentro da loja
+  @@unique([storeId, barcode])
+  @@map("products")
+}
+
+// -----------------------------------------------------------------------------
+// Lotes / Validades — coração do sistema
+// -----------------------------------------------------------------------------
+
+model Batch {
+  id          String  @id @default(uuid()) @db.Uuid
+  storeId     String  @map("store_id") @db.Uuid // desnormalizado p/ queries do dashboard e do cron
+  productId   String  @map("product_id") @db.Uuid
+  createdById String? @map("created_by_id") @db.Uuid
+
+  expiryDate      DateTime    @map("expiry_date") @db.Date // só a data importa
+  initialQuantity Int         @map("initial_quantity")
+  quantity        Int // saldo atual (decrementado em vendas/baixas)
+  status          BatchStatus @default(ACTIVE)
+
+  // Snapshot do preço no momento da entrada (preço do produto pode mudar depois)
+  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
+
+  note String?
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  store     Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product   Product       @relation(fields: [productId], references: [id], onDelete: Restrict)
+  createdBy User?         @relation("BatchCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  alerts    ExpiryAlert[]
+
+  // Query principal (dashboard + cron): lotes ativos da loja ordenados por validade
+  @@index([storeId, status, expiryDate])
+  @@index([productId])
+  @@map("batches")
+}
+
+// -----------------------------------------------------------------------------
+// Histórico de alertas (idempotência do cron + auditoria de envios)
+// -----------------------------------------------------------------------------
+
+model ExpiryAlert {
+  id      String @id @default(uuid()) @db.Uuid
+  storeId String @map("store_id") @db.Uuid
+  batchId String @map("batch_id") @db.Uuid
+
+  level   AlertLevel
+  channel AlertChannel @default(CONSOLE)
+  status  AlertStatus  @default(PENDING)
+
+  recipient String? // número de destino no momento do envio
+  message   String // texto final enviado (com sugestão de promoção)
+  error     String? // motivo da falha, se houver
+
+  // Snapshot financeiro no momento do alerta
+  quantityAtAlert Int     @map("quantity_at_alert")
+  valueAtRisk     Decimal @map("value_at_risk") @db.Decimal(12, 2)
+
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  batch Batch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  // Um lote recebe no máximo UM alerta por nível -> cron pode rodar N vezes sem spam
+  @@unique([batchId, level])
+  @@index([storeId, createdAt])
+  @@map("expiry_alerts")
+}
