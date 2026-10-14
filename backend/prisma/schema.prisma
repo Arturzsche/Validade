@@ -151,8 +151,10 @@ model Batch {
   quantity        Int // saldo atual (decrementado em vendas/baixas)
   status          BatchStatus @default(ACTIVE)
 
-  // Snapshot do preço no momento da entrada (preço do produto pode mudar depois)
-  unitPrice Decimal @map("unit_price") @db.Decimal(10, 2)
+  // Snapshots no momento da entrada (preço/custo do produto podem mudar depois)
+  unitPrice Decimal  @map("unit_price") @db.Decimal(10, 2) // venda: base da promoção sugerida
+  unitCost  Decimal? @map("unit_cost") @db.Decimal(10, 2) // custo: base do valor em risco
+  // Valor em risco = quantity × (unitCost ?? unitPrice)
 
   note String?
 
@@ -186,6 +188,7 @@ model ExpiryAlert {
   recipient String? // número de destino no momento do envio
   message   String // texto final enviado (com sugestão de promoção)
   error     String? // motivo da falha, se houver
+  attempts  Int     @default(0) // tentativas de envio (cron re-tenta PENDING/FAILED até o limite)
 
   // Snapshot financeiro no momento do alerta
   quantityAtAlert Int     @map("quantity_at_alert")
@@ -200,5 +203,6 @@ model ExpiryAlert {
   // Um lote recebe no máximo UM alerta por nível -> cron pode rodar N vezes sem spam
   @@unique([batchId, level])
   @@index([storeId, createdAt])
+  @@index([status])
   @@map("expiry_alerts")
 }
