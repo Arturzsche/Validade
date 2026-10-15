@@ -6,7 +6,7 @@ const Field = forwardRef(function Field({ label, hint, error, className = '', in
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-stone-700">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-slate-700">
         {label}
       </label>
       <input
@@ -14,7 +14,7 @@ const Field = forwardRef(function Field({ label, hint, error, className = '', in
         id={id}
         aria-invalid={Boolean(error)}
         aria-describedby={describedBy}
-        className={`h-14 w-full rounded-xl border-0 bg-white px-4 text-lg font-medium text-stone-900 ring-1 ring-inset ring-stone-300 transition-shadow placeholder:font-normal placeholder:text-stone-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-500 ${inputClassName}`}
+        className={`h-14 w-full rounded-xl border-0 bg-white px-4 text-lg font-medium text-slate-900 ring-1 ring-inset ring-slate-300 transition-shadow placeholder:font-normal placeholder:text-slate-400 focus:ring-2 focus:ring-navy-500 focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-500 ${inputClassName}`}
         {...props}
       />
       {error ? (
@@ -23,7 +23,7 @@ const Field = forwardRef(function Field({ label, hint, error, className = '', in
         </p>
       ) : (
         hint && (
-          <p id={`${id}-hint`} className="mt-1.5 text-sm text-stone-500">
+          <p id={`${id}-hint`} className="mt-1.5 text-sm text-slate-500">
             {hint}
           </p>
         )

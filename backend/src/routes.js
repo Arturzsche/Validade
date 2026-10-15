@@ -1,29 +1,18 @@
 import { Router } from 'express';
 import { authenticate } from './middlewares/auth.js';
 import authRoutes from './modules/auth/auth.routes.js';
-import storeRoutes from './modules/stores/stores.routes.js';
-import userRoutes from './modules/users/users.routes.js';
-import productRoutes from './modules/products/products.routes.js';
-import batchRoutes from './modules/batches/batches.routes.js';
-import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
-import alertRoutes from './modules/alerts/alerts.routes.js';
+import clientRoutes from './modules/clients/clients.routes.js';
+import quoteRoutes from './modules/quotes/quotes.routes.js';
 import notificationRoutes from './modules/notifications/notifications.routes.js';
-import { productPhotoRoutes, publicPhotoRoutes } from './modules/products/photos.routes.js';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
-router.use('/public', publicPhotoRoutes); // fotos de produto (a tag <img> não envia token)
 
-// Tudo abaixo exige login e é automaticamente escopado pela loja do usuário
+// Tudo abaixo exige login e é escopado pelo prestador logado
 router.use(authenticate);
-router.use('/stores', storeRoutes);
-router.use('/users', userRoutes);
-router.use('/products', productPhotoRoutes);
-router.use('/products', productRoutes);
-router.use('/batches', batchRoutes);
-router.use('/dashboard', dashboardRoutes);
-router.use('/alerts', alertRoutes);
+router.use('/clients', clientRoutes);
+router.use('/quotes', quoteRoutes);
 router.use('/notifications', notificationRoutes);
 
 export default router;

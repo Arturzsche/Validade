@@ -1,14 +1,10 @@
 import { Router } from 'express';
 import QRCode from 'qrcode';
 import { env } from '../../config/env.js';
-import { prisma } from '../../lib/prisma.js';
 import { forbidden } from '../../lib/httpError.js';
-import { requireOwner } from '../../middlewares/auth.js';
 import { getNotifier } from '../../notifications/index.js';
-import { NotifierUnavailableError, RecipientError } from '../../notifications/errors.js';
 
 const router = Router();
-router.use(requireOwner);
 
 /** Administra a sessão do WhatsApp da plataforma (ver WHATSAPP_ADMIN_EMAILS em config/env.js). */
 const canManage = (user) => env.WHATSAPP_ADMIN_EMAILS.includes(user.email.toLowerCase());
@@ -57,27 +53,6 @@ router.get('/whatsapp/qr', requireChannelAdmin, async (req, res) => {
 router.post('/whatsapp/reconnect', requireChannelAdmin, async (req, res) => {
   await getNotifier().restart();
   res.json(publicStatus(req.user));
-});
-
-// POST /api/notifications/test — envia uma mensagem de teste para o WhatsApp da loja
-router.post('/test', async (req, res) => {
-  const store = await prisma.store.findUniqueOrThrow({ where: { id: req.user.storeId } });
-  const notifier = getNotifier();
-  try {
-    const result = await notifier.send({
-      to: store.whatsappPhone,
-      message: `✅ *iValida · ${store.name}*\nTudo certo! Os alertas de vencimento da loja vão chegar neste número.`,
-    });
-    res.json({ ok: true, channel: notifier.channel, to: store.whatsappPhone, messageId: result?.id ?? null });
-  } catch (err) {
-    if (err instanceof NotifierUnavailableError) {
-      return res.status(503).json({ error: { code: 'NOTIFIER_UNAVAILABLE', message: err.message } });
-    }
-    if (err instanceof RecipientError) {
-      return res.status(422).json({ error: { code: 'INVALID_RECIPIENT', message: err.message } });
-    }
-    throw err;
-  }
 });
 
 export default router;

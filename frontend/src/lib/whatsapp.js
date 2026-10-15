@@ -4,8 +4,8 @@ export const LEVELS = {
   connected: { label: 'Conectado', dot: 'bg-emerald-500', chip: 'bg-emerald-100 text-emerald-800 ring-emerald-200' },
   connecting: { label: 'Conectando…', dot: 'bg-amber-400', chip: 'bg-amber-100 text-amber-900 ring-amber-200' },
   disconnected: { label: 'Desconectado', dot: 'bg-rose-500', chip: 'bg-rose-100 text-rose-800 ring-rose-300' },
-  simulated: { label: 'Simulação', dot: 'bg-stone-400', chip: 'bg-stone-100 text-stone-600 ring-stone-200' },
-  unknown: { label: 'WhatsApp', dot: 'bg-stone-400', chip: 'bg-stone-100 text-stone-500 ring-stone-200' },
+  simulated: { label: 'Simulação', dot: 'bg-slate-400', chip: 'bg-slate-100 text-slate-600 ring-slate-200' },
+  unknown: { label: 'WhatsApp', dot: 'bg-slate-400', chip: 'bg-slate-100 text-slate-500 ring-slate-200' },
 };
 
 /**

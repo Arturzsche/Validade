@@ -5,11 +5,12 @@ import Field from '../components/ui/Field.jsx';
 import Button from '../components/ui/Button.jsx';
 import { toE164BR } from '../lib/whatsapp.js';
 import { LogoMark } from '../components/brand/Logo.jsx';
+import { APP_NAME, APP_TAGLINE } from '../lib/brand.js';
 
 export default function LoginPage() {
   const { login, register } = useAuth();
   const [mode, setMode] = useState('login'); // login | register
-  const [form, setForm] = useState({ storeName: '', name: '', email: '', password: '', whatsapp: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', whatsapp: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -23,9 +24,9 @@ export default function LoginPage() {
       if (mode === 'login') await login(form.email, form.password);
       else {
         const { whatsapp, ...data } = form;
-        const whatsappPhone = whatsapp.trim() ? toE164BR(whatsapp) : undefined;
-        if (whatsapp.trim() && !whatsappPhone) throw new Error('WhatsApp inválido: informe DDD + número');
-        await register({ ...data, ...(whatsappPhone && { whatsappPhone }) });
+        const phone = whatsapp.trim() ? toE164BR(whatsapp) : undefined;
+        if (whatsapp.trim() && !phone) throw new Error('WhatsApp inválido: informe DDD + número');
+        await register({ ...data, ...(phone && { phone }) });
       }
     } catch (err) {
       setError(errorMessage(err));
@@ -34,31 +35,27 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col pb-8">
-      <div className="px-5 pt-[max(2.5rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-dvh flex-col px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-8">
       <div className="mx-auto w-full max-w-sm">
-        <div className="mb-7 text-center">
-          <LogoMark className="mx-auto mb-3 h-14 w-14" />
-          <h1 className="text-4xl font-bold tracking-tight text-stone-900">
-            <span className="text-emerald-500">i</span>Valida
-          </h1>
-          <p className="mt-2 font-semibold text-stone-500">Nada vence esquecido na prateleira.</p>
+        <div className="mb-8 text-center">
+          <LogoMark className="mx-auto mb-4 h-14 w-14" />
+          <h1 className="text-3xl font-semibold tracking-tight text-navy-900">{APP_NAME}</h1>
+          <p className="mt-2 text-slate-500">{APP_TAGLINE}</p>
         </div>
 
-        <form onSubmit={submit} className="space-y-4 rounded-2xl bg-white p-6 shadow-card ring-1 ring-stone-200">
+        <form onSubmit={submit} className="space-y-4 rounded-2xl bg-white p-6 shadow-card ring-1 ring-slate-200">
           {mode === 'register' && (
             <>
-              <Field label="Nome da loja" required value={form.storeName} onChange={set('storeName')} autoComplete="organization" />
               <Field label="Seu nome" required value={form.name} onChange={set('name')} autoComplete="name" />
               <Field
-                label="WhatsApp para receber os alertas"
+                label="Seu WhatsApp"
                 type="tel"
                 inputMode="tel"
                 placeholder="(11) 99999-8888"
                 value={form.whatsapp}
                 onChange={set('whatsapp')}
                 autoComplete="tel"
-                hint="Opcional agora; dá para cadastrar depois no painel"
+                hint="Opcional"
               />
             </>
           )}
@@ -81,7 +78,7 @@ export default function LoginPage() {
           )}
 
           <Button type="submit" loading={loading} block>
-            {mode === 'login' ? 'Entrar' : 'Criar conta da loja'}
+            {mode === 'login' ? 'Entrar' : 'Criar minha conta'}
           </Button>
         </form>
 
@@ -91,11 +88,10 @@ export default function LoginPage() {
             setMode(mode === 'login' ? 'register' : 'login');
             setError(null);
           }}
-          className="mt-6 block h-12 w-full rounded-full text-center font-semibold text-emerald-700 active:bg-emerald-50 md:hover:bg-emerald-50"
+          className="mt-6 block h-12 w-full rounded-xl text-center font-medium text-navy-700 hover:bg-navy-50"
         >
-          {mode === 'login' ? 'Primeira vez? Cadastre sua loja' : 'Já tenho conta'}
+          {mode === 'login' ? 'Primeira vez? Crie sua conta' : 'Já tenho conta'}
         </button>
-      </div>
       </div>
     </div>
   );

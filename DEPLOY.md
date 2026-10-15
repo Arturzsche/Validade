@@ -1,6 +1,6 @@
-# Guia de Deploy — iValida (MVP)
+# Guia de Deploy — Meus Orçamentos (MVP)
 
-Guia para colocar o Validade no ar com custo mínimo, sem perder a sessão do WhatsApp a cada deploy.
+Guia para colocar o gerenciador de orçamentos no ar com custo mínimo, sem perder a sessão do WhatsApp a cada deploy.
 
 > Preços e limites conferidos em **outubro/2026**. Planos de nuvem mudam com frequência:
 > confira a página oficial de cada serviço antes de assinar.
@@ -15,7 +15,7 @@ Guia para colocar o Validade no ar com custo mínimo, sem perder a sessão do Wh
           ▼
  ┌──────────────────────┐        ┌───────────────────────────────┐        ┌─────────────────┐
  │ Frontend (Netlify)   │  /api  │ Backend Node (Railway)        │  SQL   │ Postgres (Neon) │
- │ React estático + CDN │ ─────► │ Express + cron + Baileys      │ ─────► │ free tier       │
+ │ React estático + CDN │ ─────► │ Express + Baileys             │ ─────► │ free tier       │
  └──────────────────────┘        │ Volume /data ← sessão do WA   │        └─────────────────┘
                                  └──────────────┬────────────────┘
                                                 │ WebSocket
@@ -26,17 +26,17 @@ Guia para colocar o Validade no ar com custo mínimo, sem perder a sessão do Wh
 | Peça | Serviço | Por quê | Custo estimado |
 |---|---|---|---|
 | Banco | **Neon** (Free) | Postgres serverless que **não pausa** o projeto; suspende só a computação ociosa e acorda em ~1s | US$ 0 |
-| Backend | **Railway** (Hobby) | Processo sempre ligado (cron + WebSocket do WhatsApp) e **volume persistente** simples | US$ 5/mês (inclui US$ 5 de uso) |
+| Backend | **Railway** (Hobby) | Processo sempre ligado (WebSocket do WhatsApp) e **volume persistente** simples | US$ 5/mês (inclui US$ 5 de uso) |
 | Frontend | **Netlify** (Free) | Site estático com HTTPS (a câmera exige HTTPS) e plano gratuito que permite uso comercial | US$ 0 |
 | **Total** | | | **≈ US$ 5/mês** |
 
 ### Por que não as outras opções
 
-- **Render gratuito:** o serviço **dorme após 15 min** sem acesso. O cron das 8h não roda e a sessão
+- **Render gratuito:** o serviço **dorme após 15 min** sem acesso. A sessão
   do WhatsApp cai. Disco persistente só existe em instância paga (a partir de US$ 7/mês + US$ 0,25/GB),
   o que é viável, mas mais caro que o Railway para este caso (veja a seção 4.2).
 - **Supabase gratuito:** funciona, mas **pausa projetos após ~7 dias de inatividade**, e um projeto
-  pausado fica fora do ar até ser reativado manualmente. Uma loja que passa uma semana sem abrir o app
+  pausado fica fora do ar até ser reativado manualmente. Um prestador que passa uma semana sem abrir o app
   correria esse risco. Veja a seção 3.2 se preferir Supabase.
 - **Vercel Hobby:** ótimo para o frontend técnico, mas os termos do plano gratuito restringem o uso a
   projetos **pessoais e não comerciais**. Para um SaaS cobrado, use Netlify (ou Vercel Pro).
@@ -47,8 +47,8 @@ Guia para colocar o Validade no ar com custo mínimo, sem perder a sessão do Wh
 
 - [ ] Código no GitHub (este repositório).
 - [ ] Contas em [neon.com](https://neon.com), [railway.com](https://railway.com) e [netlify.com](https://netlify.com).
-- [ ] Um **chip dedicado** com WhatsApp para enviar os alertas. O Baileys é um cliente não oficial:
-      não use o número pessoal nem o número principal da loja.
+- [ ] Um **chip dedicado** com WhatsApp para enviar as mensagens. O Baileys é um cliente não oficial:
+      não use o número pessoal nem o número principal do negócio.
 - [ ] Gere um segredo para o JWT:
       `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
 
@@ -73,7 +73,23 @@ Guia para colocar o Validade no ar com custo mínimo, sem perder a sessão do Wh
 
 Você **não** precisa criar tabelas: o backend roda `prisma migrate deploy` a cada inicialização.
 
-**Limites do Free:** 0,5 GB de armazenamento (milhares de lojas pequenas cabem) e 100 CU-horas por
+#### Zerar o banco antigo (pivot do iValida → Orçamentos)
+
+O histórico de migrations foi recomeçado do zero (`20261020000000_init`). Num banco que já tinha as
+tabelas antigas (lojas, produtos, lotes…), apague tudo e aplique a estrutura nova **uma vez**, da sua
+máquina, dentro de `backend/`:
+
+```bash
+# ⚠️ APAGA TODOS OS DADOS do banco apontado. Confira que é o banco certo antes.
+DATABASE_URL="<string Direct do Neon>" DIRECT_URL="<string Direct do Neon>" \
+  npx prisma migrate reset --force --skip-seed
+```
+
+Use a string **Direct** (sem `-pooler`) nas duas variáveis: o reset roda DDL e não passa bem pelo pooler.
+Para ver o Dashboard com dados de exemplo, rode em seguida `npm run db:seed` com as mesmas variáveis
+(login `demo@prestador.com` / `senha-demo`). Em produção, prefira não rodar o seed.
+
+**Limites do Free:** 0,5 GB de armazenamento (milhares de prestadores cabem) e 100 CU-horas por
 mês. A computação suspende após 5 min ociosa. Se vários painéis ficarem abertos o dia todo, o polling
 de status mantém o banco acordado e consome horas; nesse caso, acompanhe o uso no console do Neon.
 
@@ -93,7 +109,7 @@ de status mantém o banco acordado e consome horas; nesse caso, acompanhe o uso 
 ## 4. Backend (Node.js + WhatsApp)
 
 O backend precisa de duas coisas que plataformas "serverless" não dão:
-**processo sempre ligado** (cron + conexão do WhatsApp) e **disco persistente** (sessão do Baileys).
+**processo sempre ligado** (conexão do WhatsApp) e **disco persistente** (sessão do Baileys).
 
 ### 4.1 Railway (recomendado)
 
@@ -119,14 +135,11 @@ O backend precisa de duas coisas que plataformas "serverless" não dão:
    # Frontend que pode chamar a API (preencha depois do passo 5; sem barra no fim)
    CORS_ORIGIN=https://validade.netlify.app
 
-   CRON_ENABLED=true
-   CRON_SCHEDULE=0 8 * * *
-   CRON_TIMEZONE=America/Sao_Paulo
+   APP_TIMEZONE=America/Sao_Paulo
 
    NOTIFIER=whatsapp
    WHATSAPP_AUTH_DIR=/data/wa-session
    WHATSAPP_ADMIN_EMAILS=seu-email@dominio.com
-   PUBLIC_APP_URL=https://validade.netlify.app
    WHATSAPP_SEND_INTERVAL_MS=3000
    WHATSAPP_LOG_LEVEL=warn
    ALERT_MAX_ATTEMPTS=3
@@ -140,9 +153,8 @@ O backend precisa de duas coisas que plataformas "serverless" não dão:
 6. Em **Deployments → View logs**, confira:
    ```
    All migrations have been successfully applied.   (ou "No pending migrations")
-   🚀 Validade API ouvindo em ...
+   🚀 API de Orçamentos ouvindo em ...
    [notificações] canal ativo: whatsapp
-   [cron] expiry-check agendado: "0 8 * * *" (America/Sao_Paulo)
    ```
    O QR também é impresso aqui, mas você vai escanear pelo painel (seção 6).
 
@@ -196,16 +208,14 @@ automático). Depois atualize `VITE_API_URL` (e faça um novo deploy do frontend
 
 ## 6. Primeiro acesso: ligando tudo
 
-1. Abra o frontend no celular → **Primeira vez? Cadastre sua loja** → use **o mesmo e-mail** que você
-   colocou em `WHATSAPP_ADMIN_EMAILS` e informe o WhatsApp que vai **receber** os alertas.
+1. Abra o frontend no celular → **Primeira vez? Crie sua conta** → use **o mesmo e-mail** que você
+   colocou em `WHATSAPP_ADMIN_EMAILS` (só esse e-mail vê o indicador e o QR do WhatsApp).
 2. No cabeçalho, o indicador do WhatsApp estará **vermelho** → toque nele.
 3. O QR aparece no modal. No **celular do chip dedicado**: WhatsApp → *Aparelhos conectados* →
    *Conectar aparelho* → aponte para a tela. O indicador fica **verde** em segundos.
-4. No mesmo modal, toque em **Enviar teste**: a mensagem "✅ Tudo certo!" deve chegar no número da loja.
-5. Teste o fluxo real: na aba **Entrada**, registre um produto que vence em menos de 15 dias e chame
-   `POST /api/alerts/run?resend=1` (com o token do dono). Chega **um** relatório "Bom dia!" com o total
-   em risco. Em produção ele sai sozinho todo dia às 08:00 (`CRON_SCHEDULE`).
-6. **Redeploy** pelo Railway e confirme que o indicador volta ao verde **sem pedir QR**. Esse é o teste
+4. Por enquanto o bot é **silencioso**: ele só mantém a sessão ativa. O envio de orçamentos e
+   cobranças pelo WhatsApp entra numa próxima etapa.
+5. **Redeploy** pelo Railway e confirme que o indicador volta ao verde **sem pedir QR**. Esse é o teste
    que prova que o volume está funcionando.
 
 ---
@@ -215,9 +225,9 @@ automático). Depois atualize `VITE_API_URL` (e faça um novo deploy do frontend
 - [ ] `GET /health` responde `{"status":"ok"}`
 - [ ] Logs mostram as migrations aplicadas e `canal ativo: whatsapp`
 - [ ] Login funciona pelo domínio do frontend (se falhar com erro de CORS, revise `CORS_ORIGIN`)
-- [ ] Recarregar `/painel` no navegador **não** dá 404 (redirect de SPA ativo)
-- [ ] A câmera abre na tela de Entrada (exige HTTPS, que Netlify e Vercel já dão)
-- [ ] Indicador verde, mensagem de teste recebida
+- [ ] Recarregar a página no navegador **não** dá 404 (redirect de SPA ativo)
+- [ ] Dashboard abre com a saudação e os 3 cards
+- [ ] Indicador do WhatsApp verde (para o e-mail admin)
 - [ ] Após redeploy, o WhatsApp reconecta **sem** QR
 - [ ] Usage Limits configurado no Railway
 
@@ -227,7 +237,7 @@ automático). Depois atualize `VITE_API_URL` (e faça um novo deploy do frontend
 
 | Situação | O que acontece / o que fazer |
 |---|---|
-| Internet do servidor oscila | Reconexão automática (indicador amarelo). O relatório fica pendente e sai ao reconectar. |
+| Internet do servidor oscila | Reconexão automática (indicador amarelo). |
 | Indicador vermelho | Toque nele e escaneie o QR de novo (só o admin vê o QR). |
 | Alguém desconectou o aparelho no celular | A sessão é apagada e um QR novo é gerado: escaneie pelo painel. |
 | "Sessão aberta em outro lugar" | Outra instância usou a mesma sessão (ex: você rodou o backend local com a mesma pasta). Feche a outra e clique em **Retomar sessão aqui**. |
@@ -253,6 +263,6 @@ worker separado. O contrato em `notifications/index.js` foi pensado para isso.
 | QR pedido a cada deploy | Volume não montado ou `WHATSAPP_AUTH_DIR` fora dele | Mount `/data` (sem espaço no fim) e `WHATSAPP_AUTH_DIR=/data/wa-session`. |
 | Indicador vermelho, mas o QR não aparece para mim | E-mail fora de `WHATSAPP_ADMIN_EMAILS` | Ajuste a variável no Railway (vale após reiniciar). |
 | Erro de CORS no navegador | `CORS_ORIGIN` diferente da URL do frontend | URL exata, com `https://`, sem barra no fim. |
-| 404 ao recarregar `/painel` | Redirect de SPA ausente | Confirme `frontend/netlify.toml` (ou `vercel.json`) e o Base directory `frontend`. |
-| Cron não dispara | Serviço dormindo | Desligue *App Sleeping* (Railway) ou saia do plano Free (Render). |
+| 404 ao recarregar uma página | Redirect de SPA ausente | Confirme `frontend/netlify.toml` (ou `vercel.json`) e o Base directory `frontend`. |
+| WhatsApp desconecta quando ninguém usa | Serviço dormindo | Desligue *App Sleeping* (Railway) ou saia do plano Free (Render). |
 | Variável de ambiente inválida | Validação do `config/env.js` | O log lista exatamente qual variável e o motivo. |

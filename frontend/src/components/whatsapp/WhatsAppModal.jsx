@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import Modal from '../ui/Modal.jsx';
 import Button from '../ui/Button.jsx';
 import Spinner from '../ui/Spinner.jsx';
-import AlertRecipientForm from './AlertRecipientForm.jsx';
 import { api } from '../../lib/api.js';
 import { channelLevel, formatJidPhone } from '../../lib/whatsapp.js';
 
@@ -11,7 +10,7 @@ const STATUS_POLL_MS = 5000;
 
 /**
  * Conexão do WhatsApp sem acesso ao terminal: mostra o QR atualizado para o
- * administrador escanear, confirma quando conecta e permite testar o envio.
+ * administrador escanear e confirma quando conecta. (Por enquanto o bot é silencioso.)
  */
 export default function WhatsAppModal({ open, onClose, status, onStatus }) {
   const level = channelLevel(status);
@@ -77,9 +76,9 @@ export default function WhatsAppModal({ open, onClose, status, onStatus }) {
   }
 
   const subtitle = {
-    connected: 'Os alertas de vencimento estão sendo enviados.',
+    connected: 'Sessão ativa. Pronto para enviar orçamentos e cobranças.',
     connecting: 'Restabelecendo a conexão…',
-    disconnected: 'Os alertas ficam guardados e saem assim que reconectar.',
+    disconnected: 'Escaneie o QR para reconectar a sessão.',
     simulated: 'Modo simulação: as mensagens aparecem no log do servidor.',
     unknown: 'Não foi possível consultar o servidor.',
   }[level];
@@ -95,7 +94,7 @@ export default function WhatsAppModal({ open, onClose, status, onStatus }) {
             <div>
               <p className="font-bold">{justConnected ? 'Conectado com sucesso!' : 'Conectado'}</p>
               {status?.me && <p className="text-sm opacity-90">Enviando pelo número {formatJidPhone(status.me)}</p>}
-              {justConnected && <p className="text-sm opacity-90">Alertas pendentes estão sendo enviados agora.</p>}
+              {justConnected && <p className="text-sm opacity-90">Sessão conectada com sucesso.</p>}
             </div>
           </div>
         )}
@@ -122,27 +121,27 @@ export default function WhatsAppModal({ open, onClose, status, onStatus }) {
                 <h3 id="qr-title" className="sr-only">
                   QR Code de conexão
                 </h3>
-                <div className="mx-auto grid h-64 w-64 place-items-center rounded-2xl bg-white p-2 ring-1 ring-stone-200">
+                <div className="mx-auto grid h-64 w-64 place-items-center rounded-2xl bg-white p-2 ring-1 ring-slate-200">
                   {qr ? (
                     <img src={qr} alt="QR Code para conectar o WhatsApp" className="h-full w-full [image-rendering:pixelated]" />
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-stone-500">
+                    <div className="flex flex-col items-center gap-2 text-slate-500">
                       <Spinner className="h-8 w-8 text-emerald-600" />
                       <p className="text-sm">Gerando QR Code…</p>
                     </div>
                   )}
                 </div>
-                <ol className="space-y-2 text-sm text-stone-700">
-                  {['Abra o WhatsApp no celular que vai enviar os alertas', 'Toque em ⋮ (ou Configurações) › Aparelhos conectados', 'Toque em Conectar aparelho e aponte a câmera para o código'].map(
+                <ol className="space-y-2 text-sm text-slate-700">
+                  {['Abra o WhatsApp no celular que vai enviar as mensagens', 'Toque em ⋮ (ou Configurações) › Aparelhos conectados', 'Toque em Conectar aparelho e aponte a câmera para o código'].map(
                     (step, i) => (
                       <li key={step} className="flex gap-3">
-                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-stone-900 text-xs font-bold text-white">{i + 1}</span>
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-900 text-xs font-bold text-white">{i + 1}</span>
                         {step}
                       </li>
                     ),
                   )}
                 </ol>
-                <p className="text-center text-xs text-stone-500">O código se renova sozinho a cada ~20 segundos.</p>
+                <p className="text-center text-xs text-slate-500">O código se renova sozinho a cada ~20 segundos.</p>
                 <Button variant="secondary" size="md" block onClick={restart} loading={restarting}>
                   Gerar novo QR
                 </Button>
@@ -153,18 +152,17 @@ export default function WhatsAppModal({ open, onClose, status, onStatus }) {
 
         {level === 'disconnected' && !canManage && (
           <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
-            <p className="font-semibold">O WhatsApp de alertas está desconectado.</p>
-            <p className="mt-1">Nenhum alerta se perde: eles serão enviados assim que a conexão voltar. Avise o administrador do sistema.</p>
+            <p className="font-semibold">O WhatsApp está desconectado.</p>
+            <p className="mt-1">Avise o administrador do sistema.</p>
           </div>
         )}
 
         {level === 'simulated' && (
-          <p className="rounded-2xl bg-stone-50 p-4 text-sm text-stone-600 ring-1 ring-stone-200">
-            Para enviar de verdade, configure <code className="font-mono text-stone-900">NOTIFIER=whatsapp</code> no servidor.
+          <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
+            Para enviar de verdade, configure <code className="font-mono text-slate-900">NOTIFIER=whatsapp</code> no servidor.
           </p>
         )}
 
-        <AlertRecipientForm connected={level === 'connected' || level === 'simulated'} />
       </div>
     </Modal>
   );

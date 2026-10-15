@@ -2,10 +2,10 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 const tones = {
-  success: 'bg-stone-900 text-white shadow-pop border-l-4 border-emerald-400',
-  warning: 'bg-stone-900 text-white shadow-pop border-l-4 border-amber-400',
-  error: 'bg-stone-900 text-white shadow-pop border-l-4 border-rose-500',
-  info: 'bg-stone-800 text-white',
+  success: 'bg-slate-900 text-white shadow-pop border-l-4 border-emerald-400',
+  warning: 'bg-slate-900 text-white shadow-pop border-l-4 border-amber-400',
+  error: 'bg-slate-900 text-white shadow-pop border-l-4 border-rose-500',
+  info: 'bg-slate-900 text-white shadow-pop border-l-4 border-navy-400',
 };
 
 /** Aviso no topo da tela que some sozinho (não bloqueia a próxima leitura). */

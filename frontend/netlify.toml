@@ -2,7 +2,7 @@
   command = "npm run build"
   publish = "dist"
 
-# SPA: /painel e /entrada são rotas do React Router — sem isto, recarregar a página dá 404
+# SPA: as rotas são do React Router — sem isto, recarregar a página dá 404
 [[redirects]]
   from = "/*"
   to = "/index.html"

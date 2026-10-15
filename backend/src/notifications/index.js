@@ -1,10 +1,10 @@
-// Ponto único de notificação. A regra de negócio (cron/alertas) só conhece esta
-// interface — trocar Baileys por Z-API, Evolution API ou a API oficial da Meta é
-// escrever um novo provider e registrá-lo abaixo, sem tocar no motor de alertas.
+// Ponto único de envio de mensagens. A regra de negócio só conhece esta interface —
+// trocar Baileys por Z-API, Evolution API ou a API oficial da Meta é escrever um novo
+// provider e registrá-lo abaixo.
 //
 // Contrato de um provider:
 //   name: string                     identificador ('console', 'whatsapp', ...)
-//   channel: 'CONSOLE' | 'WHATSAPP'  gravado no histórico (expiry_alerts.channel)
+//   channel: 'CONSOLE' | 'WHATSAPP'  canal (para registro de envios)
 //   start(), stop(): Promise<void>   ciclo de vida (conexão, sessão)
 //   isReady(): boolean               pode enviar agora?
 //   onReady(fn): () => void          chamado a cada (re)conexão

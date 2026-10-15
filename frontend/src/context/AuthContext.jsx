@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { api, configureApi } from '../lib/api.js';
 
-const STORAGE_KEY = 'validade.session';
+const STORAGE_KEY = 'orcamentos.session';
 const AuthContext = createContext(null);
 
 function loadSession() {
@@ -34,7 +34,7 @@ export function AuthProvider({ children }) {
   configureApi({ token: session?.token, onUnauthorized: logout });
 
   const start = useCallback((data) => {
-    const next = { token: data.token, user: data.user, store: data.store };
+    const next = { token: data.token, user: data.user };
     persist(next);
     configureApi({ token: next.token });
     setSession(next);
@@ -50,19 +50,9 @@ export function AuthProvider({ children }) {
     [start],
   );
 
-  /** Atualiza os dados da loja na sessão (ex: após PATCH /stores/me). */
-  const updateStore = useCallback((store) => {
-    setSession((current) => {
-      if (!current) return current;
-      const next = { ...current, store };
-      persist(next);
-      return next;
-    });
-  }, []);
-
   const value = useMemo(
-    () => ({ session, login, register, logout, updateStore }),
-    [session, login, register, logout, updateStore],
+    () => ({ session, login, register, logout }),
+    [session, login, register, logout],
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

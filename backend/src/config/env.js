@@ -10,24 +10,19 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3333),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatória'),
   CORS_ORIGIN: z.string().default('*'),
-  // Endereço público do app (link no relatório diário do WhatsApp). Opcional.
-  PUBLIC_APP_URL: z.url().optional(),
+  // Fuso usado nos números do Dashboard ("Aprovados no Mês")
+  APP_TIMEZONE: z.string().default('America/Sao_Paulo'),
 
   JWT_SECRET: z.string().min(16, 'JWT_SECRET precisa ter ao menos 16 caracteres'),
   JWT_EXPIRES_IN: z.string().default('7d'),
 
-  // Job diário de vencimentos
-  CRON_ENABLED: bool.default(true),
-  CRON_SCHEDULE: z.string().default('0 8 * * *'), // todo dia às 08:00
-  CRON_TIMEZONE: z.string().default('America/Sao_Paulo'),
 
   // Notificações: console (simulação) | whatsapp (Baileys, QR no terminal)
   NOTIFIER: z.enum(['console', 'whatsapp']).default('console'),
-  ALERT_MAX_ATTEMPTS: z.coerce.number().int().positive().default(3),
   WHATSAPP_AUTH_DIR: z.string().default('.wa-session'), // credenciais da sessão (NUNCA versionar)
   WHATSAPP_SEND_INTERVAL_MS: z.coerce.number().int().min(0).default(3000),
   // Quem pode ver o QR / reconectar pelo painel. A sessão é ÚNICA para a plataforma
-  // (é o número remetente de todas as lojas) e o cadastro de loja é público: sem esta
+  // (é o número remetente de todos os prestadores) e o cadastro é público: sem esta
   // lista, ninguém gerencia pelo painel — evita que um cadastro qualquer sequestre o número.
   WHATSAPP_ADMIN_EMAILS: z
     .string()

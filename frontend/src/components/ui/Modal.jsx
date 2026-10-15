@@ -25,7 +25,7 @@ export default function Modal({ open, onClose, title, subtitle, children, dismis
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center" role="presentation">
       <div
-        className="animate-fade-in absolute inset-0 bg-stone-950/60"
+        className="animate-fade-in absolute inset-0 bg-slate-950/60"
         onClick={() => dismissible && onClose?.()}
         aria-hidden="true"
       />
@@ -35,19 +35,19 @@ export default function Modal({ open, onClose, title, subtitle, children, dismis
         aria-labelledby={titleId}
         className="animate-sheet-up relative max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-w-md sm:rounded-2xl sm:pb-6"
       >
-        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-stone-300 sm:hidden" aria-hidden="true" />
+        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-300 sm:hidden" aria-hidden="true" />
         <header className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 id={titleId} className="text-lg font-semibold text-stone-900">
+            <h2 id={titleId} className="text-lg font-semibold text-slate-900">
               {title}
             </h2>
-            {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}
+            {subtitle && <p className="mt-1 text-sm text-slate-500">{subtitle}</p>}
           </div>
           {dismissible && (
             <button
               type="button"
               onClick={onClose}
-              className="-mr-2 -mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-stone-500 active:bg-stone-100"
+              className="-mr-2 -mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-full text-slate-500 active:bg-slate-100"
               aria-label="Fechar"
             >
               <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
