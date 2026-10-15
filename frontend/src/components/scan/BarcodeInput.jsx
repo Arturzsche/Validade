@@ -21,7 +21,7 @@ const BarcodeInput = forwardRef(function BarcodeInput({ onSubmit, busy }, ref) {
   }
 
   return (
-    <form onSubmit={submit} role="search" aria-label="Código de barras">
+    <form onSubmit={submit} role="search" aria-label="Buscar produto pelo código">
       <div className="flex gap-2">
         <label className="relative min-w-0 flex-1">
           <span className="sr-only">Código de barras</span>
