@@ -22,10 +22,11 @@ Store (loja / tenant) 1 ──< User
 | Tabela          | Papel |
 |-----------------|-------|
 | `stores`        | Tenant. Guarda WhatsApp de destino, fuso e os limites do semáforo (`warning_days`=30, `critical_days`=15). |
-| `users`         | `OWNER` (dashboard/financeiro) ou `OPERATOR` (só registra lotes). 1 usuário = 1 loja. |
+| `users`         | `OWNER` (vê tudo) ou `OPERATOR` (só Entrada e Catálogo, sem custo/valor em risco, não altera preço nem exclui). 1 usuário = 1 loja. |
 | `products`      | Catálogo por loja; `category` (Comidas, Bebidas, Limpeza, Pets, Outros); `barcode` único **dentro da loja**. `price` (venda), `cost_price` (custo, opcional) e `image_url` (foto). |
 | `batches`       | Lote: `expiry_date`, `initial_quantity`, `quantity` (saldo), snapshots `unit_price` e `unit_cost`. |
-| `expiry_alerts` | Histórico de alertas. `UNIQUE(batch_id, level)` garante que o cron não envie duplicado. |
+| `daily_reports` | Relatório diário do WhatsApp. `UNIQUE(store_id, date)`: uma mensagem por loja por dia. |
+| `expiry_alerts` | Legado (alertas por produto, antes do relatório diário); mantida só pelo histórico. |
 
 **Regra do semáforo** (calculada em tempo de leitura, não persistida), com `d = expiry_date - hoje` no fuso da loja:
 
@@ -58,7 +59,7 @@ backend/src/
 │   ├── providers/            # console.provider.js · baileys.provider.js (trocar por Z-API/Evolution = novo arquivo aqui)
 │   ├── errors.js             # NotifierUnavailableError (espera) × RecipientError (falha)
 │   ├── sendQueue.js          # intervalo mínimo entre mensagens (anti-bloqueio)
-│   └── messages.js           # textos dos alertas
+│   └── messages.js           # texto do relatório diário
 └── jobs/                     # agendamento diário e execução avulsa
 ```
 
@@ -69,12 +70,15 @@ backend/src/
 | POST | `/auth/register` | público | Cria loja + usuário dono |
 | POST | `/auth/login` | público | Retorna JWT |
 | GET | `/auth/me` | todos | Usuário e loja logados |
+
+> Operador nunca recebe dinheiro além do preço de venda: `costPrice`, `unitCost` e `valueAtRisk` são removidos das respostas para ele.
+
 | GET / PATCH | `/stores/me` | todos / dono | Config: WhatsApp, fuso, limites, % de desconto |
 | GET / POST / PATCH | `/users`, `/users/:id` | dono | Equipe (operadores de caixa) |
 | GET | `/products?search=` | todos | Catálogo (busca sem acento por nome, ou início do código), com `activeBatches` |
 | GET | `/products/barcode/:barcode` | todos | Busca após leitura da câmera (404 = produto novo) |
 | POST | `/products` | todos | Cadastro de produto |
-| PATCH | `/products/:id` | dono | Nome, preço e custo (o código de barras não muda) |
+| PATCH | `/products/:id` | todos / dono | Nome e categoria (todos); preço e custo só o dono (operador recebe 403). O código de barras não muda |
 | DELETE | `/products/:id` | dono | Nunca falha por chave estrangeira: arquiva se houver registros (itens na prateleira seguem no painel até a baixa); apaga se não houver |
 | PUT / DELETE | `/products/:id/photo` | todos | Foto da embalagem tirada no celular (JPEG/PNG/WebP, até 1,5 MB, conferida pelos bytes) |
 | GET | `/public/product-photos/:id?v=` | público | Imagem da foto (a tag `<img>` não envia token; URL versionada, cache imutável) |
@@ -83,12 +87,14 @@ backend/src/
 | GET / PATCH | `/batches/:id` | todos | Detalhe; baixa (`quantity`), descarte (`status`), correção de validade |
 | DELETE | `/batches/:id` | dono | Remove lançamento errado |
 | GET | `/dashboard/summary?limit=` | dono | Totais por cor, valor em risco e lista de ação (amarelos + vermelhos por validade) |
-| GET | `/alerts?level=&status=` | dono | Histórico de notificações |
-| POST | `/alerts/run` | dono | Executa agora a verificação do cron para a loja |
+| GET | `/alerts?status=` | dono | Histórico dos relatórios diários |
+| POST | `/alerts/run[?resend=1]` | dono | Executa agora a verificação do cron para a loja (`resend=1` reenvia o de hoje) |
 | GET | `/notifications/status` | dono | Estado do canal (ex: `waiting_qr`, `open`, `reconnecting`) |
 | POST | `/notifications/test` | dono | Envia uma mensagem de teste ao WhatsApp da loja |
 | GET | `/notifications/whatsapp/qr` | admin* | QR atual como imagem PNG (painel reconecta sem terminal) |
 | POST | `/notifications/whatsapp/reconnect` | admin* | Gera novo QR / retoma a sessão agora |
+
+> Operador nunca recebe dinheiro além do preço de venda: `costPrice`, `unitCost` e `valueAtRisk` são removidos das respostas para ele.
 
 \* admin = e-mail listado em `WHATSAPP_ADMIN_EMAILS`. A sessão do WhatsApp é **uma só para a
 plataforma** e o cadastro de loja é público; sem essa lista ninguém vê o QR pelo painel, o que
@@ -98,11 +104,28 @@ impede que um cadastro qualquer sequestre o número remetente de todas as lojas.
 
 Todo dia às 08:00 (`CRON_SCHEDULE`, fuso `CRON_TIMEZONE`), para cada loja:
 
-1. Busca lotes `ACTIVE` com saldo e `expiry_date < hoje + critical_days`.
-2. Cria um alerta `CRITICAL` (ou `EXPIRED` se já venceu) — no máximo um por lote/nível.
-3. Envia alertas `PENDING`/`FAILED` (até `ALERT_MAX_ATTEMPTS`) pelo notificador, com o texto refeito com os dados do dia.
+1. Busca os itens na prateleira com `expiry_date < hoje + critical_days` (inclui vencidos).
+2. Se houver algum, cria o **relatório do dia** (`daily_reports`, um por loja por dia — rodar o cron de novo não repete).
+3. Envia **uma única mensagem** com o resumo, montada na hora do envio:
 
-Lotes que já entram na zona vermelha disparam o alerta **na hora**, sem esperar o cron.
+```
+☀️ *Bom dia! Relatório iValida · Mercadinho Bom Preço*
+
+Você tem *3 produtos* a vencer ou já vencidos, somando *R$ 99,20* em risco.
+
+🏷️ *Para colocar em promoção (2):*
+• Leite Condensado 395g (12 un.) — vence em 5 dias
+• Iogurte Natural 170g (8 un.) — vence em 9 dias
+
+⛔ *Já venceram — tirar da prateleira (1):*
+• Pão de Forma (4 un.) — venceu há 2 dias
+
+👉 Crie as promoções no painel: https://sua-loja.app/painel
+```
+
+Registrar um produto **não** manda mensagem: tudo vai no relatório da manhã (sem spam).
+O link do rodapé usa `PUBLIC_APP_URL` (opcional). Falha de envio é re-tentada no mesmo dia
+(até `ALERT_MAX_ATTEMPTS`); `POST /api/alerts/run?resend=1` reenvia o de hoje (teste do dono).
 Também é possível rodar avulso com `npm run job:expiry`.
 
 ## WhatsApp (Passo 4)
@@ -117,8 +140,8 @@ O provider padrão de produção usa **Baileys** (WebSocket do WhatsApp Web, sem
   (verde/amarelo/vermelho) abre um modal com o QR atualizado. A sessão fica salva em `WHATSAPP_AUTH_DIR`.
 - **Reconexão automática** com backoff exponencial (1s → 60s); logout feito pelo celular apaga a
   sessão e gera QR novo; se a sessão for aberta em outra instância, para de reconectar (evita disputa).
-- **Canal fora do ar não perde alerta**: fica `PENDING` sem consumir tentativa e é enviado
-  automaticamente quando a conexão volta.
+- **Canal fora do ar não perde o relatório**: fica `PENDING` sem consumir tentativa e é enviado
+  automaticamente quando a conexão volta (no mesmo dia).
 - Fila com intervalo mínimo entre mensagens (`WHATSAPP_SEND_INTERVAL_MS`, padrão 3s).
 
 > ⚠️ Baileys é um cliente **não oficial**: o WhatsApp pode banir números que disparam em volume.
@@ -142,10 +165,10 @@ npm run dev
    ```
    (guarde o `token` da resposta; para trocar o número depois: `PATCH /api/stores/me`)
 3. Mensagem de teste: `curl -X POST localhost:3333/api/notifications/test -H "Authorization: Bearer $TOKEN"`
-4. Alerta real: registre pela tela de Entrada um lote vencendo em menos de 15 dias — o alerta sai na hora.
-   Ou rode o cron sob demanda: `curl -X POST localhost:3333/api/alerts/run -H "Authorization: Bearer $TOKEN"`.
+4. Relatório real: registre pela Entrada um produto vencendo em menos de 15 dias e rode o cron sob demanda:
+   `curl -X POST "localhost:3333/api/alerts/run?resend=1" -H "Authorization: Bearer $TOKEN"`.
 5. Teste de queda: desligue a internet do servidor por alguns segundos e veja a reconexão no log;
-   alertas gerados nesse intervalo saem sozinhos quando voltar.
+   o relatório gerado nesse intervalo sai sozinho quando voltar.
 
 Em Railway/Render, monte um **volume persistente** em `WHATSAPP_AUTH_DIR`; sem ele o QR é pedido a cada deploy.
 
@@ -168,7 +191,7 @@ frontend/src/
 │   │   └── PromoModal.jsx      # texto da promoção, desconto ajustável, copiar p/ WhatsApp
 │   ├── scan/
 │   │   ├── BarcodeScanner.jsx  # câmera traseira + zxing (EAN-13/8, UPC, CODE-128), lanterna
-│   │   ├── ManualCodeModal.jsx # plano B: digitar o código
+│   │   ├── BarcodeInput.jsx    # campo fixo do código (leitor USB ou digitação) — modo metralhadora
 │   │   ├── ProductCard.jsx     # foto + nome para conferência
 │   │   ├── BatchEntryForm.jsx  # validade (DD/MM/AAAA ou MM/AAAA) + quantidade, prévia do semáforo
 │   │   ├── NewProductModal.jsx # mini-cadastro (nome, custo, venda) no 404/422

@@ -126,6 +126,7 @@ O backend precisa de duas coisas que plataformas "serverless" não dão:
    NOTIFIER=whatsapp
    WHATSAPP_AUTH_DIR=/data/wa-session
    WHATSAPP_ADMIN_EMAILS=seu-email@dominio.com
+   PUBLIC_APP_URL=https://validade.netlify.app
    WHATSAPP_SEND_INTERVAL_MS=3000
    WHATSAPP_LOG_LEVEL=warn
    ALERT_MAX_ATTEMPTS=3
@@ -201,8 +202,9 @@ automático). Depois atualize `VITE_API_URL` (e faça um novo deploy do frontend
 3. O QR aparece no modal. No **celular do chip dedicado**: WhatsApp → *Aparelhos conectados* →
    *Conectar aparelho* → aponte para a tela. O indicador fica **verde** em segundos.
 4. No mesmo modal, toque em **Enviar teste**: a mensagem "✅ Tudo certo!" deve chegar no número da loja.
-5. Teste o fluxo real: na aba **Entrada**, registre um lote que vence em menos de 15 dias. O alerta
-   chega na hora.
+5. Teste o fluxo real: na aba **Entrada**, registre um produto que vence em menos de 15 dias e chame
+   `POST /api/alerts/run?resend=1` (com o token do dono). Chega **um** relatório "Bom dia!" com o total
+   em risco. Em produção ele sai sozinho todo dia às 08:00 (`CRON_SCHEDULE`).
 6. **Redeploy** pelo Railway e confirme que o indicador volta ao verde **sem pedir QR**. Esse é o teste
    que prova que o volume está funcionando.
 
@@ -225,7 +227,7 @@ automático). Depois atualize `VITE_API_URL` (e faça um novo deploy do frontend
 
 | Situação | O que acontece / o que fazer |
 |---|---|
-| Internet do servidor oscila | Reconexão automática (indicador amarelo). Alertas ficam pendentes e saem ao reconectar. |
+| Internet do servidor oscila | Reconexão automática (indicador amarelo). O relatório fica pendente e sai ao reconectar. |
 | Indicador vermelho | Toque nele e escaneie o QR de novo (só o admin vê o QR). |
 | Alguém desconectou o aparelho no celular | A sessão é apagada e um QR novo é gerado: escaneie pelo painel. |
 | "Sessão aberta em outro lugar" | Outra instância usou a mesma sessão (ex: você rodou o backend local com a mesma pasta). Feche a outra e clique em **Retomar sessão aqui**. |
