@@ -37,7 +37,7 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
   }
 
   return (
-    <Modal open={Boolean(batch)} onClose={onClose} title="Gerar promoção" subtitle="Transforme o prejuízo em venda antes do vencimento.">
+    <Modal open={Boolean(batch)} onClose={onClose} title="Criar promoção" subtitle="Venda antes de vencer e recupere o dinheiro.">
       <div className="space-y-5">
         <div className="flex items-center gap-3">
           <ProductThumb src={batch.product.imageUrl} name={batch.product.name} size="md" />
@@ -82,7 +82,7 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
           <p className="col-span-2 text-sm text-slate-600">
             {n.belowCost ? (
               <>
-                ⚠️ Abaixo do custo, mas ainda salva {brl(n.recovered)} dos <strong>{brl(n.loss)}</strong> que iriam para o lixo.
+                Fica abaixo do custo, mas você ainda recupera {brl(n.recovered)} dos <strong>{brl(n.loss)}</strong> que iriam para o lixo.
               </>
             ) : (
               <>

@@ -13,7 +13,7 @@ export function buildAlertMessage({ level, batch, store, today }) {
     return [
       `⛔ *Validade · ${store.name}*`,
       `*${product}* venceu em ${brDate(info.expiryDate)}.`,
-      `Estoque: ${units} · Perda: *${brl(info.valueAtRisk)}*`,
+      `Estoque: ${units} · Dinheiro perdido: *${brl(info.valueAtRisk)}*`,
       `👉 Retire da área de venda e registre a baixa no app.`,
     ].join('\n');
   }
@@ -26,7 +26,7 @@ export function buildAlertMessage({ level, batch, store, today }) {
   return [
     `🔴 *Validade · ${store.name}*`,
     `*${product}* vence ${when}.`,
-    `Estoque: ${units} · Valor em risco: *${brl(info.valueAtRisk)}*`,
-    `💡 Sugestão: promoção de *${pct}% OFF* — de ${price} por *${promo}* para girar o lote antes do vencimento.`,
+    `Estoque: ${units} · Dinheiro parado: *${brl(info.valueAtRisk)}*`,
+    `💡 Sugestão: promoção de *${pct}% OFF* — de ${price} por *${promo}* para vender antes de vencer.`,
   ].join('\n');
 }

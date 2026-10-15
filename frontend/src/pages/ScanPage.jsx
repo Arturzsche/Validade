@@ -12,7 +12,7 @@ import Spinner from '../components/ui/Spinner.jsx';
 import Toast from '../components/ui/Toast.jsx';
 import { describeDays } from '../components/ui/SemaphoreBadge.jsx';
 
-/** Tela 1 — Leitura de código de barras e entrada rápida de lote (uso do operador). */
+/** Tela 1 — Leitura de código de barras e registro rápido de validade (uso do operador). */
 export default function ScanPage() {
   const { session } = useAuth();
   const [toast, setToast] = useState(null);
@@ -22,7 +22,7 @@ export default function ScanPage() {
     const urgent = batch.semaphore === 'red';
     setToast({
       tone: urgent ? 'warning' : 'success',
-      title: batch.merged ? `+${batch.addedQuantity} somado ao lote existente` : 'Lote salvo',
+      title: batch.merged ? `+${batch.addedQuantity} un. somadas ao que já estava registrado` : 'Produto registrado',
       message: `${batch.product.name} · ${describeDays(batch.daysToExpiry)}${urgent ? ' · dono avisado' : ''}`,
     });
   }, []);
@@ -33,7 +33,7 @@ export default function ScanPage() {
   const { store } = session;
 
   return (
-    <AppShell title="Entrada de lotes">
+    <AppShell title="Registrar produtos">
       <main className="mx-auto max-w-md space-y-5 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
         {flow.step === 'scan' && (
           <>

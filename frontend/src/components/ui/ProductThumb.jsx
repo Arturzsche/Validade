@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 const sizes = {
+  sm: 'h-10 w-10 rounded-lg',
   md: 'h-14 w-14 rounded-xl',
   lg: 'h-20 w-20 rounded-2xl',
 };

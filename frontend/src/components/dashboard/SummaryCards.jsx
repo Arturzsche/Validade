@@ -1,90 +1,61 @@
 import { brl } from '../../lib/money.js';
 
-const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const items = (n) => `${n} ${n === 1 ? 'item' : 'itens'}`;
 
-/** Card de maior destaque: dinheiro que vai virar prejuízo se nada for feito. */
-function RiskCard({ zone, criticalDays }) {
-  const hasRisk = zone.batches > 0;
+const tones = {
+  red: { tag: 'bg-red-50 text-red-700', dot: 'bg-red-500', value: 'text-red-600' },
+  amber: { tag: 'bg-amber-50 text-amber-800', dot: 'bg-amber-400', value: 'text-amber-700' },
+  green: { tag: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500', value: 'text-slate-900' },
+};
+
+/** Card branco e calmo: a cor aparece só na etiqueta e no número principal. */
+function StatCard({ tone, tag, value, caption, note, className = '' }) {
+  const t = tones[tone];
   return (
-    <section
-      aria-labelledby="risk-title"
-      className={`relative h-full overflow-hidden rounded-3xl p-5 sm:p-6 ${
-        hasRisk ? 'bg-red-600 text-white shadow-lg shadow-red-600/30' : 'bg-white text-slate-900 ring-1 ring-slate-200'
-      }`}
-    >
-      {hasRisk && (
-        <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10" aria-hidden="true" />
-      )}
-      <div className="flex items-center gap-2">
-        <span className="relative flex h-3 w-3" aria-hidden="true">
-          {hasRisk && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white/70" />}
-          <span className={`relative inline-flex h-3 w-3 rounded-full ${hasRisk ? 'bg-white' : 'bg-red-500'}`} />
-        </span>
-        <h2 id="risk-title" className={`text-sm font-bold uppercase tracking-wider ${hasRisk ? 'text-red-50' : 'text-red-600'}`}>
-          Risco · menos de {criticalDays} dias + vencidos
-        </h2>
-      </div>
-
-      <p className="mt-4 text-sm font-medium opacity-90">Valor em risco</p>
-      <p className="text-4xl font-extrabold tracking-tight tabular-nums sm:text-5xl md:text-6xl">{brl(zone.value)}</p>
-      <p className="mt-1 text-sm opacity-90">
-        {hasRisk ? 'em custo de mercadoria que pode virar prejuízo' : 'Nenhum lote perto de vencer. Bom trabalho!'}
-      </p>
-
-      {hasRisk && (
-        <div className="mt-5 flex flex-wrap gap-2">
-          <span className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold">
-            {plural(zone.batches, 'lote', 'lotes')} · {plural(zone.units, 'unidade', 'unidades')}
-          </span>
-          {zone.expired.batches > 0 && (
-            <span className="rounded-full bg-red-950/40 px-3 py-1 text-sm font-semibold">
-              ⛔ {plural(zone.expired.batches, 'vencido', 'vencidos')} · {brl(zone.expired.value)}
-            </span>
-          )}
-        </div>
-      )}
-    </section>
-  );
-}
-
-function ZoneCard({ tone, title, subtitle, primary, secondary }) {
-  const styles = {
-    yellow: { dot: 'bg-amber-400', title: 'text-amber-700', ring: 'ring-amber-200', bg: 'bg-amber-50' },
-    green: { dot: 'bg-emerald-500', title: 'text-emerald-700', ring: 'ring-slate-200', bg: 'bg-white' },
-  }[tone];
-  return (
-    <section className={`rounded-3xl p-4 ring-1 sm:p-5 md:col-span-2 ${styles.bg} ${styles.ring}`}>
-      <div className="flex items-center gap-2">
-        <span className={`h-2.5 w-2.5 rounded-full ${styles.dot}`} aria-hidden="true" />
-        <h2 className={`text-xs font-bold uppercase tracking-wider ${styles.title}`}>{title}</h2>
-      </div>
-      <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p>
-      <p className="mt-3 text-2xl font-extrabold tabular-nums text-slate-900 sm:text-3xl">{primary}</p>
-      <p className="text-sm text-slate-600 tabular-nums">{secondary}</p>
+    <section className={`rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70 ${className}`}>
+      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${t.tag}`}>
+        <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} aria-hidden="true" />
+        {tag}
+      </span>
+      <p className={`mt-4 text-3xl font-bold tracking-tight tabular-nums ${t.value}`}>{value}</p>
+      <p className="mt-1 text-sm text-slate-600">{caption}</p>
+      {note && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-500">{note}</p>}
     </section>
   );
 }
 
 export default function SummaryCards({ zones, thresholds }) {
   const { red, yellow, green } = zones;
+  const urgentDays = thresholds.criticalDays - 1;
+
   return (
-    <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
-      <div className="col-span-2 md:row-span-2">
-        <RiskCard zone={red} criticalDays={thresholds.criticalDays} />
-      </div>
-      <ZoneCard
-        tone="yellow"
-        title="Atenção"
-        subtitle={`${thresholds.criticalDays} a ${thresholds.warningDays} dias`}
-        primary={plural(yellow.batches, 'lote', 'lotes')}
-        secondary={`${brl(yellow.value)} em mercadoria`}
+    <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+      <StatCard
+        className="col-span-2 md:col-span-1"
+        tone="red"
+        tag="Ação urgente"
+        value={brl(red.value)}
+        caption={
+          red.batches
+            ? `a recuperar em ${items(red.batches)} que vencem em até ${urgentDays} dias`
+            : `Nada vencendo nos próximos ${urgentDays} dias`
+        }
+        note={
+          red.expired.batches > 0 &&
+          `${items(red.expired.batches)} já ${red.expired.batches === 1 ? 'venceu' : 'venceram'} e ${red.expired.batches === 1 ? 'precisa' : 'precisam'} sair da prateleira`
+        }
       />
-      <ZoneCard
+      <StatCard
+        tone="amber"
+        tag="Vence este mês"
+        value={brl(yellow.value)}
+        caption={yellow.batches ? `dinheiro parado em ${items(yellow.batches)}` : 'Nenhum item'}
+      />
+      <StatCard
         tone="green"
-        title="Seguro"
-        subtitle={`mais de ${thresholds.warningDays} dias`}
-        primary={plural(green.batches, 'lote', 'lotes')}
-        secondary={`${plural(green.units, 'unidade', 'unidades')} ok`}
+        tag="Tudo certo"
+        value={items(green.batches)}
+        caption={`com mais de ${thresholds.warningDays} dias de validade`}
       />
     </div>
   );

@@ -11,7 +11,7 @@ function RequireAuth({ role, children }) {
   return children;
 }
 
-/** Dono cai no Painel; operador cai direto na Entrada de lotes. */
+/** Dono cai no Painel; operador cai direto no registro de produtos. */
 function Home() {
   const { session } = useAuth();
   if (!session) return <Navigate to="/login" replace />;

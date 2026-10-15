@@ -7,7 +7,7 @@ import { daysBetween, formatDateBR, maskDate, parseExpiry, semaphoreFor, todayIs
 
 /**
  * As duas únicas informações manuais do fluxo: validade e quantidade.
- * Mostra em tempo real em que cor do semáforo o lote vai cair.
+ * Mostra em tempo real em que cor do semáforo o produto vai cair.
  */
 export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit, onCancel }) {
   const [expiryText, setExpiryText] = useState('');
@@ -57,7 +57,7 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
 
       {expired && (
         <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200">
-          Esta data já passou. O lote será registrado como <strong>vencido</strong> e o dono será avisado.
+          Esta data já passou. O produto será registrado como <strong>vencido</strong> e o dono será avisado.
         </p>
       )}
 
@@ -69,7 +69,7 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
 
       <div className="flex flex-col gap-3 pt-1">
         <Button type="submit" variant={expired ? 'danger' : 'primary'} loading={saving} block>
-          {expired ? 'Registrar lote vencido' : 'Salvar lote'}
+          {expired ? 'Registrar como vencido' : 'Salvar'}
         </Button>
         <Button variant="ghost" onClick={onCancel} disabled={saving} block>
           Cancelar e ler outro

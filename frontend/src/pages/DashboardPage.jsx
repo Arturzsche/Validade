@@ -5,6 +5,7 @@ import AppShell from '../components/layout/AppShell.jsx';
 import SummaryCards from '../components/dashboard/SummaryCards.jsx';
 import ActionList from '../components/dashboard/ActionList.jsx';
 import PromoModal from '../components/dashboard/PromoModal.jsx';
+import TodaySummary from '../components/dashboard/TodaySummary.jsx';
 import Button from '../components/ui/Button.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 
@@ -34,7 +35,7 @@ export default function DashboardPage() {
 
   return (
     <AppShell title="Painel" width="wide" actions={refreshButton}>
-      <main className="mx-auto max-w-5xl space-y-8 px-4 py-5 md:py-8">
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6 md:space-y-8 md:py-10">
         {loading && <DashboardSkeleton />}
 
         {!loading && error && !data && (
@@ -54,8 +55,14 @@ export default function DashboardPage() {
                 Mostrando os últimos dados carregados. {error}
               </p>
             )}
+            <TodaySummary name={session.user.name} items={data.actionItems} />
             <SummaryCards zones={data.zones} thresholds={data.thresholds} />
-            <ActionList items={data.actionItems} total={data.actionItemsTotal} onPromo={setPromoBatch} />
+            <ActionList
+              items={data.actionItems}
+              total={data.actionItemsTotal}
+              thresholds={data.thresholds}
+              onPromo={setPromoBatch}
+            />
           </>
         )}
       </main>
@@ -72,18 +79,19 @@ export default function DashboardPage() {
 }
 
 function DashboardSkeleton() {
-  const block = 'animate-pulse rounded-3xl bg-slate-200';
+  const block = 'animate-pulse rounded-2xl bg-slate-200/80';
   return (
-    <div className="space-y-8" aria-busy="true" aria-label="Carregando painel">
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:grid-rows-2 md:gap-4">
-        <div className={`col-span-2 h-48 md:row-span-2 md:h-auto ${block}`} />
-        <div className={`h-32 md:col-span-2 ${block}`} />
-        <div className={`h-32 md:col-span-2 ${block}`} />
+    <div className="space-y-6 md:space-y-8" aria-busy="true" aria-label="Carregando painel">
+      <div className="space-y-2">
+        <div className="h-7 w-48 animate-pulse rounded-lg bg-slate-200/80" />
+        <div className="h-5 w-72 max-w-full animate-pulse rounded-lg bg-slate-200/80" />
       </div>
-      <div className="space-y-3">
-        <div className="h-6 w-40 animate-pulse rounded-lg bg-slate-200" />
-        <div className={`h-64 ${block}`} />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
+        <div className={`col-span-2 h-36 md:col-span-1 ${block}`} />
+        <div className={`h-36 ${block}`} />
+        <div className={`h-36 ${block}`} />
       </div>
+      <div className={`h-64 ${block}`} />
     </div>
   );
 }

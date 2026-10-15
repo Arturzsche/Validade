@@ -1,7 +1,7 @@
 export const semaphoreStyles = {
-  red: { dot: 'bg-red-500', chip: 'bg-red-50 text-red-700 ring-red-200', label: 'Risco' },
-  yellow: { dot: 'bg-amber-400', chip: 'bg-amber-50 text-amber-800 ring-amber-200', label: 'Atenção' },
-  green: { dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-700 ring-emerald-200', label: 'Seguro' },
+  red: { dot: 'bg-red-500', chip: 'bg-red-50 text-red-700 ring-red-200', label: 'Urgente' },
+  yellow: { dot: 'bg-amber-400', chip: 'bg-amber-50 text-amber-800 ring-amber-200', label: 'Este mês' },
+  green: { dot: 'bg-emerald-500', chip: 'bg-emerald-50 text-emerald-700 ring-emerald-200', label: 'Tudo certo' },
 };
 
 export function describeDays(days) {

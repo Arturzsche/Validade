@@ -6,7 +6,7 @@ export default function RecentEntries({ entries }) {
   if (!entries.length) {
     return (
       <p className="px-2 text-center text-sm text-slate-500">
-        Leia o código de barras de um produto para registrar o lote.
+        Leia o código de barras de um produto para registrar a validade.
       </p>
     );
   }
