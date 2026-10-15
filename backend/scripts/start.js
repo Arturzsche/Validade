@@ -27,6 +27,11 @@ if (!process.env.DIRECT_URL && process.env.DATABASE_URL) {
   console.warn('[start] DIRECT_URL não definida: usando a DATABASE_URL (sem "-pooler") para as migrations.');
 }
 
+// Sem a trava de migração do Prisma (pg_advisory_lock): numa troca de deploy, uma conexão
+// antiga segurando a trava fazia o migrate esperar 10s e falhar (P1002). É seguro desligar
+// porque a API roda em UMA instância (a sessão do WhatsApp não permite réplicas).
+process.env.PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK ??= '1';
+
 const prisma = fileURLToPath(new URL('../node_modules/.bin/prisma', import.meta.url));
 const migrate = spawnSync(prisma, ['migrate', 'deploy'], { stdio: 'inherit', env: process.env });
 if (migrate.status !== 0) {
