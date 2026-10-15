@@ -9,6 +9,7 @@ import Logo from '../brand/Logo.jsx';
 const NAV = [
   { to: '/painel', label: 'Painel', icon: GaugeIcon },
   { to: '/entrada', label: 'Entrada', icon: ScanIcon },
+  { to: '/catalogo', label: 'Catálogo', icon: CatalogIcon },
 ];
 
 const widths = { md: 'max-w-md', wide: 'max-w-5xl' };
@@ -83,7 +84,7 @@ export default function AppShell({ title, actions, width = 'md', children }) {
           aria-label="Principal"
           className="fixed inset-x-0 bottom-0 z-30 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
         >
-          <div className="mx-auto grid h-[4.5rem] max-w-md grid-cols-2">
+          <div className="mx-auto grid h-[4.5rem] max-w-md grid-cols-3">
             {NAV.map(({ to, label, icon: Icon }) => (
               <NavLink
                 key={to}
@@ -119,6 +120,14 @@ function ScanIcon() {
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
       <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3" strokeLinecap="round" />
       <path d="M8 8v8M11 8v8M14 8v8M17 8v8" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function CatalogIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+      <path d="M4 7h1M4 12h1M4 17h1M9 7h11M9 12h11M9 17h11" strokeLinecap="round" />
     </svg>
   );
 }

@@ -126,6 +126,10 @@ model Product {
   // Custo unitário (opcional) — permite mostrar prejuízo real além do faturamento perdido
   costPrice Decimal? @map("cost_price") @db.Decimal(10, 2)
 
+  // Excluído do catálogo sem perder o histórico de validades/alertas (soft delete).
+  // Ler o mesmo código de barras de novo reativa o produto.
+  archivedAt DateTime? @map("archived_at") @db.Timestamptz(3)
+
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -134,6 +138,7 @@ model Product {
 
   // O mesmo EAN pode existir em lojas diferentes, mas é único dentro da loja
   @@unique([storeId, barcode])
+  @@index([storeId, archivedAt, name])
   @@map("products")
 }
 

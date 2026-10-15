@@ -59,3 +59,33 @@ export function semaphoreFor(days, { warningDays = 30, criticalDays = 15 } = {})
   if (days <= warningDays) return 'yellow';
   return 'green';
 }
+
+/**
+ * Valor de <input type="date"> ('YYYY-MM-DD') ou <input type="month"> ('YYYY-MM') -> { iso, monthOnly }.
+ * Navegadores sem seletor nativo caem para texto: aceita também DD/MM/AAAA e MM/AAAA.
+ */
+export function parseNativeDate(value) {
+  const v = String(value ?? '').trim();
+  if (!v) return { error: 'Escolha a data de validade' };
+
+  let m = v.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) {
+    const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+    if (mo < 1 || mo > 12 || d < 1 || d > lastDayOfMonth(y, mo)) return { error: 'Data inexistente' };
+    return { iso: v, monthOnly: false };
+  }
+
+  m = v.match(/^(\d{4})-(\d{2})$/);
+  if (m) {
+    const [y, mo] = [Number(m[1]), Number(m[2])];
+    if (mo < 1 || mo > 12) return { error: 'Mês inválido' };
+    return { iso: toIso(y, mo, lastDayOfMonth(y, mo)), monthOnly: true };
+  }
+
+  return parseExpiry(v);
+}
+
+/** Hoje + N anos, para o limite do calendário. */
+export function yearsFromToday(n, now = new Date()) {
+  return toIso(now.getFullYear() + n, now.getMonth() + 1, Math.min(now.getDate(), 28));
+}

@@ -25,11 +25,15 @@ export async function quickEntry({ storeId, userId, input }) {
     let product = await tx.product.findUnique({ where: { storeId_barcode: { storeId, barcode } } });
     let productCreated = false;
 
-    if (!product) {
+    // Produto excluído do catálogo (arquivado) conta como inexistente: pede o mini-cadastro
+    // e reativa o mesmo registro com os dados novos (o código de barras é único na loja).
+    if (!product || product.archivedAt) {
       if (!productData) {
         throw unprocessable('PRODUCT_NOT_FOUND', 'Produto não cadastrado. Envie `product` com nome e preço.', { barcode });
       }
-      product = await tx.product.create({ data: { ...productData, barcode, storeId } });
+      product = product
+        ? await tx.product.update({ where: { id: product.id }, data: { ...productData, archivedAt: null } })
+        : await tx.product.create({ data: { ...productData, barcode, storeId } });
       productCreated = true;
     }
 

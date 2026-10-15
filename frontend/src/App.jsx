@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import ScanPage from './pages/ScanPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import CatalogPage from './pages/CatalogPage.jsx';
 
 function RequireAuth({ role, children }) {
   const { session } = useAuth();
@@ -28,6 +29,14 @@ export default function App() {
         element={
           <RequireAuth role="OWNER">
             <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/catalogo"
+        element={
+          <RequireAuth role="OWNER">
+            <CatalogPage />
           </RequireAuth>
         }
       />

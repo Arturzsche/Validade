@@ -13,6 +13,7 @@ export function serializeProduct(p) {
     imageUrl: p.imageUrl,
     price: num(p.price),
     costPrice: num(p.costPrice),
+    ...(p._count && { activeBatches: p._count.batches }), // itens na prateleira (listagem do catálogo)
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };

@@ -71,10 +71,11 @@ backend/src/
 | GET | `/auth/me` | todos | Usuário e loja logados |
 | GET / PATCH | `/stores/me` | todos / dono | Config: WhatsApp, fuso, limites, % de desconto |
 | GET / POST / PATCH | `/users`, `/users/:id` | dono | Equipe (operadores de caixa) |
-| GET | `/products?search=` | todos | Catálogo |
+| GET | `/products?search=` | todos | Catálogo (busca sem acento por nome, ou início do código), com `activeBatches` |
 | GET | `/products/barcode/:barcode` | todos | Busca após leitura da câmera (404 = produto novo) |
 | POST | `/products` | todos | Cadastro de produto |
-| PATCH / DELETE | `/products/:id` | dono | Preço/custo; delete bloqueado (409) se houver lotes |
+| PATCH | `/products/:id` | dono | Nome, preço e custo (o código de barras não muda) |
+| DELETE | `/products/:id` | dono | 409 se houver itens ativos na prateleira; arquiva se só houver histórico; apaga se não houver registros |
 | **POST** | **`/batches`** | todos | **Entrada rápida**: `{ barcode, expiryDate, quantity, product? }` |
 | GET | `/batches?semaphore=red\|yellow\|green\|expired&status=&search=` | todos | Lista ordenada por validade |
 | GET / PATCH | `/batches/:id` | todos | Detalhe; baixa (`quantity`), descarte (`status`), correção de validade |

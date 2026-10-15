@@ -299,3 +299,73 @@ test('painel: status para todo dono; QR e reconexão só para WHATSAPP_ADMIN_EMA
   assert.equal(done.body.qr, null);
   assert.equal(done.body.me, '5511900000000@s.whatsapp.net');
 });
+
+test('catálogo: listar, buscar, editar e excluir sem perder histórico', { skip }, async () => {
+  setNotifier(fakeNotifier());
+  const reg = await request(app).post('/api/auth/register').send({
+    storeName: 'Empório Catálogo', name: 'Lia', email: 'lia@example.com', password: 'senha-forte',
+  });
+  const owner = { Authorization: `Bearer ${reg.body.token}` };
+  await request(app).post('/api/users').set(owner).send({ name: 'Caixa', email: 'caixa2@example.com', password: 'senha-forte' });
+  const op = await request(app).post('/api/auth/login').send({ email: 'caixa2@example.com', password: 'senha-forte' });
+  const operator = { Authorization: `Bearer ${op.body.token}` };
+
+  const mk = (barcode, name, price) => request(app).post('/api/products').set(owner).send({ barcode, name, price });
+  const arroz = (await mk('7890000000201', 'Arroz 5kg', 27.9)).body;
+  const cafe = (await mk('7890000000202', 'Café 500g', 19.9)).body;
+  const leite = (await mk('7890000000203', 'Leite 1L', 5.49)).body;
+  await mk('7890000000201', 'Duplicado', 1).expect(409); // produto ativo nunca é sobrescrito
+
+  // Café: lote ativo · Leite: só histórico (vendido)
+  await request(app).post('/api/batches').set(owner).send({ barcode: cafe.barcode, expiryDate: day(60), quantity: 3 }).expect(201);
+  const leiteBatch = await request(app).post('/api/batches').set(owner).send({ barcode: leite.barcode, expiryDate: day(5), quantity: 2 });
+  await request(app).patch(`/api/batches/${leiteBatch.body.batch.id}`).set(owner).send({ quantity: 0 }).expect(200);
+
+  // Listagem ordenada por nome, com itens ativos na prateleira
+  let list = await request(app).get('/api/products').set(owner);
+  assert.deepEqual(list.body.items.map((p) => p.name), ['Arroz 5kg', 'Café 500g', 'Leite 1L']);
+  assert.deepEqual(list.body.items.map((p) => p.activeBatches), [0, 1, 0]);
+  assert.equal((await request(app).get('/api/products?search=caf').set(owner)).body.items[0].name, 'Café 500g');
+  assert.equal((await request(app).get('/api/products?search=CAFE').set(owner)).body.items[0]?.name, 'Café 500g', 'busca ignora acento e caixa');
+  assert.equal((await request(app).get('/api/products?search=50%25').set(owner)).body.total, 0, '% é literal, não curinga');
+  assert.equal((await request(app).get('/api/products?search=78900000002').set(owner)).body.total, 3);
+
+  // Edição: nome, preço e custo (código de barras não muda)
+  const edited = await request(app).patch(`/api/products/${arroz.id}`).set(owner).send({ name: 'Arroz Tipo 1 5kg', price: 29.9, costPrice: 21 });
+  assert.equal(edited.status, 200);
+  assert.equal(edited.body.name, 'Arroz Tipo 1 5kg');
+  assert.equal(edited.body.price, 29.9);
+  assert.equal(edited.body.costPrice, 21);
+  await request(app).patch(`/api/products/${arroz.id}`).set(owner).send({ barcode: '7890000000999' }).expect(400);
+  await request(app).patch(`/api/products/${arroz.id}`).set(operator).send({ price: 1 }).expect(403);
+  await request(app).delete(`/api/products/${arroz.id}`).set(operator).expect(403);
+
+  // Exclusão: bloqueada com estoque ativo; arquiva com histórico; apaga sem registros
+  const blocked = await request(app).delete(`/api/products/${cafe.id}`).set(owner);
+  assert.equal(blocked.status, 409);
+  assert.equal(blocked.body.error.code, 'PRODUCT_HAS_ACTIVE_STOCK');
+
+  const archived = await request(app).delete(`/api/products/${leite.id}`).set(owner);
+  assert.deepEqual(archived.body, { archived: true });
+  assert.equal(await prisma.batch.count({ where: { productId: leite.id } }), 1, 'histórico preservado');
+
+  const removed = await request(app).delete(`/api/products/${arroz.id}`).set(owner);
+  assert.deepEqual(removed.body, { archived: false });
+  assert.equal(await prisma.product.count({ where: { id: arroz.id } }), 0);
+
+  list = await request(app).get('/api/products').set(owner);
+  assert.deepEqual(list.body.items.map((p) => p.name), ['Café 500g']);
+  await request(app).get(`/api/products/barcode/${leite.barcode}`).set(owner).expect(404);
+  await request(app).patch(`/api/products/${leite.id}`).set(owner).send({ price: 1 }).expect(404);
+
+  // Ler o código do produto arquivado de novo: pede mini-cadastro e reativa o mesmo registro
+  const again = await request(app).post('/api/batches').set(operator).send({ barcode: leite.barcode, expiryDate: day(20), quantity: 6 });
+  assert.equal(again.status, 422);
+  const revived = await request(app).post('/api/batches').set(operator)
+    .send({ barcode: leite.barcode, expiryDate: day(20), quantity: 6, product: { name: 'Leite Integral 1L', price: 5.99 } });
+  assert.equal(revived.status, 201);
+  assert.equal(revived.body.productCreated, true);
+  assert.equal(revived.body.batch.productId, leite.id, 'mesmo produto, histórico continua ligado');
+  list = await request(app).get('/api/products').set(owner);
+  assert.deepEqual(list.body.items.map((p) => p.name), ['Café 500g', 'Leite Integral 1L']);
+});

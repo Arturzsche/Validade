@@ -3,18 +3,21 @@ import Field from '../ui/Field.jsx';
 import QuantityStepper from '../ui/QuantityStepper.jsx';
 import Button from '../ui/Button.jsx';
 import SemaphoreBadge from '../ui/SemaphoreBadge.jsx';
-import { daysBetween, formatDateBR, maskDate, parseExpiry, semaphoreFor, todayIso } from '../../lib/dates.js';
+import { daysBetween, formatDateBR, parseNativeDate, semaphoreFor, todayIso, yearsFromToday } from '../../lib/dates.js';
 
 /**
  * As duas únicas informações manuais do fluxo: validade e quantidade.
+ * A validade usa o calendário nativo do celular (iOS/Android) — nada de digitar barras.
+ * Embalagem com só mês/ano? Um toque troca para o seletor de mês (vale o último dia).
  * Mostra em tempo real em que cor do semáforo o produto vai cair.
  */
 export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit, onCancel }) {
-  const [expiryText, setExpiryText] = useState('');
+  const [expiryValue, setExpiryValue] = useState('');
+  const [monthOnly, setMonthOnly] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [touched, setTouched] = useState(false);
 
-  const parsed = useMemo(() => (expiryText ? parseExpiry(expiryText) : { error: 'Informe a validade' }), [expiryText]);
+  const parsed = useMemo(() => parseNativeDate(expiryValue), [expiryValue]);
   const days = parsed.iso ? daysBetween(todayIso(), parsed.iso) : null;
   const semaphore = days !== null ? semaphoreFor(days, thresholds) : null;
   const expired = days !== null && days < 0;
@@ -27,24 +30,43 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
     onSubmit({ expiryDate: parsed.iso, quantity });
   }
 
-  const showDateError = parsed.error && (touched || expiryText.replace(/\D/g, '').length >= 6);
+  const showDateError = parsed.error && (touched || expiryValue.length >= 10);
+
+  function toggleMonthOnly() {
+    setMonthOnly((v) => !v);
+    setExpiryValue('');
+  }
+
+  // Abre o seletor nativo também ao clicar no texto do campo (Chrome desktop só abre no ícone)
+  function openPicker(e) {
+    try {
+      e.currentTarget.showPicker?.();
+    } catch {
+      // navegador sem showPicker: o toque já abre o seletor
+    }
+  }
 
   return (
     <form onSubmit={submit} className="space-y-5" noValidate>
       <div>
         <Field
-          label="Validade"
-          inputMode="numeric"
-          autoComplete="off"
-          autoFocus
-          enterKeyHint="next"
-          placeholder="DD/MM/AAAA"
-          value={expiryText}
-          onChange={(e) => setExpiryText(maskDate(e.target.value))}
+          key={monthOnly ? 'month' : 'date'}
+          label={monthOnly ? 'Validade (mês e ano)' : 'Validade'}
+          type={monthOnly ? 'month' : 'date'}
+          max={monthOnly ? yearsFromToday(10).slice(0, 7) : yearsFromToday(10)}
+          value={expiryValue}
+          onChange={(e) => setExpiryValue(e.target.value)}
+          onClick={openPicker}
           error={showDateError ? parsed.error : null}
-          hint="Só tem mês/ano na embalagem? Digite MM/AAAA"
-          inputClassName="text-2xl font-bold tracking-wider tabular-nums"
+          inputClassName="appearance-none text-xl font-bold tabular-nums [&::-webkit-date-and-time-value]:text-left"
         />
+        <button
+          type="button"
+          onClick={toggleMonthOnly}
+          className="mt-2 text-sm font-medium text-emerald-700 underline-offset-2 active:underline md:hover:underline"
+        >
+          {monthOnly ? 'A embalagem tem o dia: escolher data completa' : 'A embalagem só tem mês e ano?'}
+        </button>
         {parsed.iso && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <SemaphoreBadge semaphore={semaphore} days={days} />
