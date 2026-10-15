@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "prisma migrate deploy && node --watch src/server.js",
-    "start": "prisma migrate deploy && node src/server.js",
+    "start": "node scripts/start.js",
     "test": "node --test",
     "db:seed": "node prisma/seed.js",
     "prisma:validate": "prisma validate",

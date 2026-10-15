@@ -266,4 +266,5 @@ worker separado. O contrato em `notifications/index.js` foi pensado para isso.
 | 404 ao recarregar uma página | Redirect de SPA ausente | Confirme `frontend/netlify.toml` (ou `vercel.json`) e o Base directory `frontend`. |
 | WhatsApp desconecta quando ninguém usa | Serviço dormindo | Desligue *App Sleeping* (Railway) ou saia do plano Free (Render). |
 | Erro "storeName: Invalid input…" ao criar conta, ou 500 no Dashboard | Railway servindo um deploy antigo (o deploy novo falhou e o anterior continuou no ar) | Abra `https://<sua-api>/health`: o campo `version` mostra o commit em execução. Se não for o último, faça **Redeploy** do commit mais recente e confira os logs do build. |
+| Deploy novo "falha" e o Railway segue com o antigo | O container novo morreu ao iniciar | Veja os logs do deploy **novo** (não do ativo). O `npm start` já tolera `DIRECT_URL` ausente (deriva da `DATABASE_URL`) e sobe a API mesmo se a migration falhar, com o erro no log. |
 | Variável de ambiente inválida | Validação do `config/env.js` | O log lista exatamente qual variável e o motivo. |
