@@ -10,8 +10,8 @@ marceneiros, técnicos de manutenção). O nome é provisório: troque em `front
 ## Status
 
 - [x] **Etapa 1** — Banco novo (clientes, orçamentos, itens), CRUD de `clients` e `quotes`, Dashboard
-- [ ] Criar/editar orçamento pela interface
-- [ ] PDF do orçamento
+- [x] **Etapa 2** — Tela Novo Orçamento (cliente na hora, itens dinâmicos, total ao vivo), Visualizar Orçamento e Gerar PDF
+- [ ] Editar orçamento / aprovar e rejeitar pela interface
 - [ ] Envio do orçamento e cobrança pelo WhatsApp
 
 ## Modelo de dados (`backend/prisma/schema.prisma`)
@@ -71,6 +71,9 @@ usando o mesmo contrato `send()` de `src/notifications`.
 src/
 ├── pages/LoginPage.jsx        # entrar / criar conta
 ├── pages/DashboardPage.jsx    # saudação, 3 cards, últimos orçamentos, botão "Novo Orçamento"
+├── pages/NewQuotePage.jsx     # /orcamentos/novo — cliente (ou cadastro rápido), itens, total, salvar
+├── pages/QuoteViewPage.jsx    # /orcamentos/:id — resumo do orçamento + "Gerar PDF"
+├── components/quotes/QuotePdf.jsx # documento A4 (@react-pdf/renderer, carregado só ao gerar)
 ├── hooks/useQuotesSummary.js  # GET /quotes/summary
 ├── lib/quotes.js              # rótulos e selos de status
 ├── lib/brand.js               # nome do produto (provisório)

@@ -23,7 +23,7 @@ export function serializeQuote(q) {
     expiresAt: q.expiresAt ? toDateOnly(q.expiresAt) : null,
     respondedAt: q.respondedAt,
     createdAt: q.createdAt,
-    ...(q.client && { client: { id: q.client.id, name: q.client.name, phone: q.client.phone } }),
+    ...(q.client && { client: { id: q.client.id, name: q.client.name, phone: q.client.phone, address: q.client.address } }),
     ...(q.items && {
       items: q.items.map((i) => ({
         id: i.id,

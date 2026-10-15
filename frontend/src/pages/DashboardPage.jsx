@@ -1,9 +1,8 @@
-import { useCallback, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useQuotesSummary } from '../hooks/useQuotesSummary.js';
 import AppShell from '../components/layout/AppShell.jsx';
 import Button from '../components/ui/Button.jsx';
-import Toast from '../components/ui/Toast.jsx';
 import { brl } from '../lib/money.js';
 import { relativeDay } from '../lib/dates.js';
 import { formatRate, plural, QUOTE_STATUS } from '../lib/quotes.js';
@@ -14,20 +13,15 @@ const firstName = (name) => name?.trim().split(/\s+/)[0] ?? 'Prestador';
 export default function DashboardPage() {
   const { session } = useAuth();
   const { data, error, loading, reload } = useQuotesSummary();
-  const [toast, setToast] = useState(null);
-  const dismissToast = useCallback(() => setToast(null), []);
-
-  // Esqueleto: a criação de orçamento chega na próxima etapa
-  const newQuote = () => setToast({ tone: 'info', title: 'Novo orçamento', message: 'A criação de orçamentos chega na próxima etapa.' });
+  const navigate = useNavigate();
+  const newQuote = () => navigate('/orcamentos/novo');
 
   return (
     <AppShell title="Início">
       <main className="mx-auto max-w-3xl space-y-8 px-4 pt-6 pb-[calc(7rem+env(safe-area-inset-bottom))] md:pt-10 md:pb-12">
         <header className="flex items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-navy-900 md:text-3xl">
-              Olá, {firstName(session.user.name)}
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight text-navy-900 md:text-3xl">Olá, {firstName(session.user.name)}</h1>
             <p className="mt-1 text-slate-500">Aqui está o resumo dos seus orçamentos.</p>
           </div>
           {/* Desktop: botão no topo. Celular: botão flutuante no rodapé (ao alcance do polegar) */}
@@ -63,8 +57,6 @@ export default function DashboardPage() {
           <PlusIcon /> Novo Orçamento
         </Button>
       </div>
-
-      <Toast toast={toast} onDismiss={dismissToast} />
     </AppShell>
   );
 }
@@ -124,24 +116,28 @@ function RecentQuotes({ quotes }) {
 function QuoteRow({ quote }) {
   const status = QUOTE_STATUS[quote.status];
   return (
-    <li className="flex items-center gap-3 px-4 py-3.5 sm:px-5">
-      <span
-        className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-navy-50 text-sm font-semibold text-navy-700"
-        aria-hidden="true"
-      >
-        {initials(quote.client.name)}
-      </span>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-slate-900">{quote.client.name}</p>
-        <p className="text-sm text-slate-500">{relativeDay(quote.createdAt)}</p>
-      </div>
-      <div className="flex shrink-0 flex-col items-end gap-1">
-        <p className="font-semibold tabular-nums text-slate-900">{brl(quote.totalAmount)}</p>
-        <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${status.chip}`}>
-          <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} aria-hidden="true" />
-          {status.label}
+    <li>
+      <Link to={`/orcamentos/${quote.id}`} className="flex items-center gap-3 px-4 py-3.5 transition-colors hover:bg-slate-50 sm:px-5">
+        <span
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-navy-50 text-sm font-semibold text-navy-700"
+          aria-hidden="true"
+        >
+          {initials(quote.client.name)}
         </span>
-      </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-slate-900">{quote.client.name}</p>
+          <p className="text-sm text-slate-500">{relativeDay(quote.createdAt)}</p>
+        </div>
+        <div className="flex shrink-0 flex-col items-end gap-1">
+          <p className="font-semibold tabular-nums text-slate-900">{brl(quote.totalAmount)}</p>
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${status.chip}`}
+          >
+            <span className={`h-1.5 w-1.5 rounded-full ${status.dot}`} aria-hidden="true" />
+            {status.label}
+          </span>
+        </div>
+      </Link>
     </li>
   );
 }

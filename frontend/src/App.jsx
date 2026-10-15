@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import NewQuotePage from './pages/NewQuotePage.jsx';
+import QuoteViewPage from './pages/QuoteViewPage.jsx';
 
 function RequireAuth({ children }) {
   const { session } = useAuth();
@@ -18,6 +20,22 @@ export default function App() {
         element={
           <RequireAuth>
             <DashboardPage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/orcamentos/novo"
+        element={
+          <RequireAuth>
+            <NewQuotePage />
+          </RequireAuth>
+        }
+      />
+      <Route
+        path="/orcamentos/:id"
+        element={
+          <RequireAuth>
+            <QuoteViewPage />
           </RequireAuth>
         }
       />
