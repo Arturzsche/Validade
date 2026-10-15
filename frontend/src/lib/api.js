@@ -2,6 +2,7 @@
 // (ex: 422 PRODUCT_NOT_FOUND), que as telas usam para decidir o fluxo.
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? '/api';
+export const API_BASE_URL = BASE_URL;
 
 export class ApiError extends Error {
   constructor(status, code, message, details) {
@@ -22,15 +23,16 @@ export function configureApi({ token, onUnauthorized: handler }) {
 
 export async function api(path, { method = 'GET', body, signal } = {}) {
   let res;
+  const binary = body instanceof Blob; // foto: vai crua, com o tipo da imagem
   try {
     res = await fetch(`${BASE_URL}${path}`, {
       method,
       signal,
       headers: {
-        ...(body !== undefined && { 'Content-Type': 'application/json' }),
+        ...(body !== undefined && { 'Content-Type': binary ? body.type : 'application/json' }),
         ...(authToken && { Authorization: `Bearer ${authToken}` }),
       },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
+      body: body === undefined ? undefined : binary ? body : JSON.stringify(body),
     });
   } catch (err) {
     if (err.name === 'AbortError') throw err;

@@ -4,7 +4,9 @@ import { diffInDays, todayInTimeZone } from '../../lib/dates.js';
 import { alertLevelFor, expiryDateFilterFor } from '../../domain/expiry.js';
 import { checkBatchNow } from '../alerts/alerts.service.js';
 
-const withProduct = { product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true } } };
+const withProduct = {
+  product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true, category: true, photoUpdatedAt: true } },
+};
 
 export async function getStoreContext(storeId) {
   const store = await prisma.store.findUniqueOrThrow({ where: { id: storeId } });

@@ -18,15 +18,15 @@ export default function StockHealth({ zones }) {
     : 'Nenhum produto registrado';
 
   return (
-    <section aria-labelledby="health-title" className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-slate-900/[0.04]">
+    <section aria-labelledby="health-title" className="motion-safe:animate-pop-in rounded-3xl bg-white p-4 shadow-card ring-1 ring-stone-900/5">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id="health-title" className="text-sm font-semibold text-slate-700">
-          Saúde do estoque
+        <h3 id="health-title" className="text-sm font-extrabold text-stone-700">
+          <span aria-hidden="true">🩺 </span>Saúde do estoque
         </h3>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-stone-500">
           {total ? (
             <>
-              <span className="text-lg font-bold tabular-nums text-slate-900">{healthy}%</span> em dia
+              <span className="text-xl font-black tabular-nums text-stone-900">{healthy}%</span> em dia
             </>
           ) : (
             'sem itens ainda'
@@ -34,23 +34,23 @@ export default function StockHealth({ zones }) {
         </p>
       </div>
 
-      <div role="img" aria-label={`Saúde do estoque. ${summary}`} className="mt-3 flex h-3 gap-[2px] overflow-hidden rounded-full bg-slate-100">
+      <div role="img" aria-label={`Saúde do estoque. ${summary}`} className="mt-3 flex h-4 gap-[3px] overflow-hidden rounded-full bg-stone-100 p-0.5">
         {total > 0 &&
           SEGMENTS.filter((s) => counts[s.key] > 0).map((s) => (
             <span
               key={s.key}
               title={`${s.label}: ${counts[s.key]} ${counts[s.key] === 1 ? 'item' : 'itens'} (${pct(counts[s.key], total)}%)`}
-              className={`h-full ${s.color} transition-[width] duration-500 first:rounded-l-full last:rounded-r-full`}
+              className={`h-full rounded-full ${s.color} transition-[width] duration-700`}
               style={{ width: `${Math.max((counts[s.key] / total) * 100, 3)}%` }}
             />
           ))}
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-stone-600">
         {SEGMENTS.map((s) => (
           <li key={s.key} className="inline-flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${s.color}`} aria-hidden="true" />
-            {s.label} <span className="font-semibold tabular-nums text-slate-900">{counts[s.key]}</span>
+            {s.label} <span className="font-black tabular-nums text-stone-900">{counts[s.key]}</span>
           </li>
         ))}
       </ul>

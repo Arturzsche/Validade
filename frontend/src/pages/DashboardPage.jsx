@@ -22,7 +22,7 @@ export default function DashboardPage() {
       onClick={refresh}
       disabled={refreshing}
       aria-label="Atualizar painel"
-      className="grid h-10 w-10 place-items-center rounded-xl text-slate-300 active:bg-white/10 md:hover:bg-white/10"
+      className="grid h-10 w-10 place-items-center rounded-full text-stone-500 transition-transform active:bg-stone-100 motion-safe:md:hover:rotate-90 md:hover:bg-stone-100"
     >
       {refreshing ? (
         <Spinner className="h-5 w-5" />
@@ -40,9 +40,9 @@ export default function DashboardPage() {
         {loading && <DashboardSkeleton />}
 
         {!loading && error && !data && (
-          <div className="rounded-3xl bg-white px-6 py-10 text-center ring-1 ring-slate-200">
-            <p className="font-semibold text-slate-900">Não foi possível carregar o painel</p>
-            <p className="mt-1 text-sm text-slate-500">{error}</p>
+          <div className="rounded-3xl bg-white px-6 py-10 text-center shadow-card ring-1 ring-stone-900/5">
+            <p className="font-semibold text-stone-900">Não foi possível carregar o painel</p>
+            <p className="mt-1 text-sm text-stone-500">{error}</p>
             <Button className="mt-5" size="md" onClick={refresh}>
               Tentar de novo
             </Button>
@@ -83,12 +83,12 @@ export default function DashboardPage() {
 }
 
 function DashboardSkeleton() {
-  const block = 'animate-pulse rounded-2xl bg-slate-200/80';
+  const block = 'animate-pulse rounded-2xl bg-stone-200/80';
   return (
     <div className="space-y-6 md:space-y-8" aria-busy="true" aria-label="Carregando painel">
       <div className="space-y-2">
-        <div className="h-7 w-48 animate-pulse rounded-lg bg-slate-200/80" />
-        <div className="h-5 w-72 max-w-full animate-pulse rounded-lg bg-slate-200/80" />
+        <div className="h-7 w-48 animate-pulse rounded-lg bg-stone-200/80" />
+        <div className="h-5 w-72 max-w-full animate-pulse rounded-lg bg-stone-200/80" />
       </div>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4">
         <div className={`col-span-2 h-36 md:col-span-1 ${block}`} />

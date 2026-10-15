@@ -1,23 +1,44 @@
 import { useState } from 'react';
-import CategoryIcon from './CategoryIcon.jsx';
+import { categoryInfo, fallbackEmoji } from '../../lib/categories.js';
+import { productPhotoUrl } from '../../lib/photos.js';
 
 const sizes = {
-  sm: 'h-10 w-10 rounded-lg',
-  md: 'h-14 w-14 rounded-xl',
-  lg: 'h-20 w-20 rounded-2xl',
+  sm: { box: 'h-12 w-12 rounded-2xl', emoji: 'text-2xl' },
+  md: { box: 'h-14 w-14 rounded-2xl', emoji: 'text-3xl' },
+  lg: { box: 'h-20 w-20 rounded-3xl', emoji: 'text-5xl' },
 };
 
-/** Foto do produto; sem foto (ou link quebrado), um ícone de mercadoria pela categoria do nome. */
-export default function ProductThumb({ src, name, size = 'lg' }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) return <CategoryIcon name={name} className={sizes[size]} />;
+/**
+ * Imagem do produto, na ordem: prévia local (foto recém-tirada) › foto tirada no celular ›
+ * foto da base pública › emoji grande da categoria num ladrilho colorido.
+ * Se uma imagem falhar ao carregar, passa para a próxima.
+ */
+export default function ProductThumb({ product, size = 'lg', previewSrc }) {
+  const sources = [previewSrc, productPhotoUrl(product), product?.imageUrl].filter(Boolean);
+  const [failed, setFailed] = useState(0);
+  const src = sources[failed];
+  const s = sizes[size];
+
+  if (!src) {
+    const info = categoryInfo(product?.category);
+    return (
+      <div
+        className={`grid shrink-0 place-items-center ${info.tile} ${s.box}`}
+        data-category={product?.category ?? 'OTHER'}
+        aria-hidden="true"
+      >
+        <span className={`${s.emoji} leading-none drop-shadow-sm`}>{fallbackEmoji(product?.category, product?.name)}</span>
+      </div>
+    );
+  }
   return (
     <img
+      key={src}
       src={src}
-      alt={name}
+      alt={product?.name ?? ''}
       loading="lazy"
-      onError={() => setFailed(true)}
-      className={`shrink-0 bg-white object-contain ring-1 ring-slate-200 ${sizes[size]}`}
+      onError={() => setFailed((n) => n + 1)}
+      className={`shrink-0 bg-white object-cover ring-2 ring-white shadow-sm ${s.box}`}
     />
   );
 }

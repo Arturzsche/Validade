@@ -22,8 +22,10 @@ export default function ScanPage() {
     const urgent = batch.semaphore === 'red';
     setToast({
       tone: urgent ? 'warning' : 'success',
-      title: batch.merged ? `+${batch.addedQuantity} un. somadas ao que já estava registrado` : 'Produto registrado',
-      message: `${batch.product.name} · ${describeDays(batch.daysToExpiry)}${urgent ? ' · dono avisado' : ''}`,
+      title: batch.merged ? `+${batch.addedQuantity} un. somadas ao que já estava registrado` : 'Produto registrado! 🎉',
+      message: `${batch.product.name} · ${describeDays(batch.daysToExpiry)}${urgent ? ' · dono avisado' : ''}${
+        batch.photoFailed ? ' · a foto não subiu, tente de novo depois' : ''
+      }`,
     });
   }, []);
 
@@ -35,7 +37,7 @@ export default function ScanPage() {
   return (
     <AppShell title="Registrar produtos">
       <main className="mx-auto max-w-md space-y-5 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
-        <h1 className="text-lg font-bold text-slate-900 sm:hidden">Registrar produtos</h1>
+        <h1 className="text-2xl font-black text-stone-900 sm:hidden">Registrar produtos <span aria-hidden="true">📷</span></h1>
         {flow.step === 'scan' && (
           <>
             <div className="h-[min(62dvh,520px)]">
@@ -46,7 +48,7 @@ export default function ScanPage() {
         )}
 
         {flow.step === 'lookup' && (
-          <div className="flex h-[min(62dvh,520px)] flex-col items-center justify-center gap-3 rounded-3xl bg-white text-slate-600 ring-1 ring-slate-200">
+          <div className="flex h-[min(62dvh,520px)] flex-col items-center justify-center gap-3 rounded-3xl bg-white text-stone-600 ring-1 ring-stone-200">
             <Spinner className="h-10 w-10 text-emerald-600" />
             <p className="font-medium">Buscando {flow.barcode}…</p>
           </div>
@@ -60,15 +62,18 @@ export default function ScanPage() {
                 barcode={flow.barcode}
                 isNew={flow.isNewProduct}
                 onEdit={flow.editDraft}
+                onPhoto={flow.addPhoto}
+                previewSrc={flow.photo?.previewUrl}
+                photoBusy={flow.photoBusy}
               />
             ) : (
-              <div className="rounded-3xl bg-white p-4 text-slate-500 ring-1 ring-slate-200">
-                Código <span className="font-semibold tabular-nums text-slate-700">{flow.barcode}</span> · aguardando cadastro
+              <div className="rounded-3xl bg-white p-4 text-stone-500 ring-1 ring-stone-200">
+                Código <span className="font-semibold tabular-nums text-stone-700">{flow.barcode}</span> · aguardando cadastro
               </div>
             )}
 
             {/* key: formulário limpo a cada novo código lido */}
-            <section key={flow.barcode} className="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
+            <section key={flow.barcode} className="rounded-3xl bg-white p-5 shadow-card ring-1 ring-stone-900/5">
               <BatchEntryForm
                 thresholds={store}
                 saving={flow.saving}
@@ -90,6 +95,8 @@ export default function ScanPage() {
         suggestion={flow.suggestion}
         onClose={flow.closeNewProduct}
         onSubmit={flow.submitNewProduct}
+        onPhoto={flow.addPhoto}
+        photoPreview={flow.photo?.previewUrl}
       />
 
       <Toast toast={toast} onDismiss={dismissToast} />

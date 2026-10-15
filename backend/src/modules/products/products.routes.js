@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../lib/prisma.js';
+import { Prisma } from '@prisma/client';
 import { conflict, notFound } from '../../lib/httpError.js';
 import { barcode, idParams, money, pagination } from '../../lib/schemas.js';
 import { serializeProduct } from '../../lib/serializers.js';
@@ -13,7 +14,7 @@ export const productInput = z.object({
   barcode,
   name: z.string().trim().min(2).max(120),
   brand: z.string().trim().max(60).optional(),
-  category: z.string().trim().max(60).optional(),
+  category: z.enum(['FOOD', 'DRINKS', 'CLEANING', 'PETS', 'OTHER']).optional(),
   imageUrl: z.url({ protocol: /^https$/ }).max(500).optional(),
   price: money,
   costPrice: money.optional(),
@@ -125,32 +126,34 @@ router.patch(
 );
 
 /**
- * DELETE /api/products/:id — tira o produto do catálogo sem apagar histórico:
- *  - com itens ativos na prateleira: 409 (excluir esconderia um vencimento real)
- *  - só com histórico de validades: arquiva (soft delete)
- *  - sem nenhum registro: apaga de vez
+ * DELETE /api/products/:id — tira o produto do catálogo SEM nunca quebrar a chave estrangeira
+ * (Batch.product é Restrict de propósito: Cascade apagaria em silêncio o histórico de validades):
+ *  - com registros de validade (ativos ou históricos): arquiva (soft delete). Itens ainda na
+ *    prateleira continuam no painel e nos alertas até a baixa — nenhum vencimento some.
+ *  - sem nenhum registro: apaga de vez (a foto vai junto, via cascade).
+ *  - se um registro entrar entre a contagem e o delete (corrida), cai para arquivar.
  */
 router.delete('/:id', requireOwner, validate({ params: idParams }), async (req, res) => {
   const current = await findOwnProduct(req.user.storeId, req.valid.params.id);
-  const [active, any] = await prisma.$transaction([
+  const [onShelf, anyBatch] = await prisma.$transaction([
     prisma.batch.count({ where: { productId: current.id, ...activeStock } }),
     prisma.batch.count({ where: { productId: current.id } }),
   ]);
 
-  if (active > 0) {
-    throw conflict(
-      'PRODUCT_HAS_ACTIVE_STOCK',
-      `Este produto ainda tem ${active} ${active === 1 ? 'registro' : 'registros'} de validade na prateleira. Dê baixa antes de excluir.`,
-    );
-  }
-
-  if (any > 0) {
+  const archive = async () => {
     await prisma.product.update({ where: { id: current.id }, data: { archivedAt: new Date() } });
-    return res.json({ archived: true });
-  }
+    res.json({ archived: true, onShelf });
+  };
 
-  await prisma.product.delete({ where: { id: current.id } });
-  res.json({ archived: false });
+  if (anyBatch > 0) return archive();
+
+  try {
+    await prisma.product.delete({ where: { id: current.id } });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') return archive();
+    throw err;
+  }
+  res.json({ archived: false, onShelf: 0 });
 });
 
 export default router;

@@ -29,9 +29,20 @@ export function errorHandler(err, _req, res, _next) {
     if (err.code === 'P2025') {
       return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Recurso não encontrado' } });
     }
+    if (err.code === 'P2021' || err.code === 'P2022') {
+      // Tabela/coluna inexistente: código novo rodando sobre banco sem as migrations
+      console.error('[db] Banco desatualizado — rode "npx prisma migrate deploy".', err.meta);
+      return res.status(503).json({
+        error: { code: 'DATABASE_OUTDATED', message: 'O banco de dados está desatualizado. Rode as migrations (npx prisma migrate deploy).' },
+      });
+    }
     if (err.code === 'P2003') {
       return res.status(409).json({ error: { code: 'IN_USE', message: 'Registro possui vínculos e não pode ser removido' } });
     }
+  }
+
+  if (err.type === 'entity.too.large') {
+    return res.status(413).json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'Arquivo grande demais' } });
   }
 
   if (err.type === 'entity.parse.failed') {

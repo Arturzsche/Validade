@@ -24,7 +24,7 @@ router.get('/summary', validate({ query: summaryQuery }), async (req, res) => {
   const batches = await prisma.batch.findMany({
     where: { storeId: store.id, status: 'ACTIVE', quantity: { gt: 0 } },
     // price atual do produto: base da promoção sugerida (o snapshot do lote fica para o histórico)
-    include: { product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true, price: true } } },
+    include: { product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true, category: true, photoUpdatedAt: true, price: true } } },
     orderBy: { expiryDate: 'asc' },
   });
 

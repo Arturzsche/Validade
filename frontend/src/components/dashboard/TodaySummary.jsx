@@ -6,7 +6,7 @@ function TodayMessage({ items }) {
   const promo = items.filter((b) => b.semaphore === 'red' && !b.expired).length;
   const expired = items.filter((b) => b.expired).length;
   const thisMonth = items.filter((b) => b.semaphore === 'yellow').length;
-  const strong = 'font-semibold text-slate-900';
+  const strong = 'font-black text-stone-900';
 
   if (promo || expired) {
     const expiredLabel = promo
@@ -27,9 +27,9 @@ function TodayMessage({ items }) {
 export default function TodaySummary({ storeName, items }) {
   return (
     <header>
-      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Visão geral da loja</p>
-      <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">{storeName}</h2>
-      <p className="mt-2 max-w-xl text-base text-slate-600">
+      <p className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-amber-800"><span aria-hidden="true">🏪</span> Visão geral da loja</p>
+      <h2 className="mt-2 text-3xl font-black tracking-tight text-stone-900 md:text-4xl">{storeName}</h2>
+      <p className="mt-2 max-w-xl text-base font-semibold text-stone-600">
         <TodayMessage items={items} />
       </p>
     </header>

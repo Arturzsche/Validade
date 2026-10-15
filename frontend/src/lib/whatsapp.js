@@ -1,11 +1,11 @@
 // Estado do canal WhatsApp -> nível visual do indicador do cabeçalho.
 
 export const LEVELS = {
-  connected: { label: 'Conectado', dot: 'bg-emerald-400', chip: 'bg-emerald-500/15 text-emerald-200 ring-emerald-400/30' },
-  connecting: { label: 'Conectando…', dot: 'bg-amber-400', chip: 'bg-amber-400/15 text-amber-200 ring-amber-300/30' },
-  disconnected: { label: 'Desconectado', dot: 'bg-red-500', chip: 'bg-red-500/20 text-red-100 ring-red-400/50' },
-  simulated: { label: 'Simulação', dot: 'bg-slate-400', chip: 'bg-white/10 text-slate-300 ring-white/15' },
-  unknown: { label: 'WhatsApp', dot: 'bg-slate-500', chip: 'bg-white/10 text-slate-400 ring-white/15' },
+  connected: { label: 'Conectado', dot: 'bg-emerald-500', chip: 'bg-emerald-100 text-emerald-800 ring-emerald-200' },
+  connecting: { label: 'Conectando…', dot: 'bg-amber-400', chip: 'bg-amber-100 text-amber-900 ring-amber-200' },
+  disconnected: { label: 'Desconectado', dot: 'bg-rose-500', chip: 'bg-rose-100 text-rose-800 ring-rose-300' },
+  simulated: { label: 'Simulação', dot: 'bg-stone-400', chip: 'bg-stone-100 text-stone-600 ring-stone-200' },
+  unknown: { label: 'WhatsApp', dot: 'bg-stone-400', chip: 'bg-stone-100 text-stone-500 ring-stone-200' },
 };
 
 /**

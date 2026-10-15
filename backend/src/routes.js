@@ -8,15 +8,18 @@ import batchRoutes from './modules/batches/batches.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
 import alertRoutes from './modules/alerts/alerts.routes.js';
 import notificationRoutes from './modules/notifications/notifications.routes.js';
+import { productPhotoRoutes, publicPhotoRoutes } from './modules/products/photos.routes.js';
 
 const router = Router();
 
 router.use('/auth', authRoutes);
+router.use('/public', publicPhotoRoutes); // fotos de produto (a tag <img> não envia token)
 
 // Tudo abaixo exige login e é automaticamente escopado pela loja do usuário
 router.use(authenticate);
 router.use('/stores', storeRoutes);
 router.use('/users', userRoutes);
+router.use('/products', productPhotoRoutes);
 router.use('/products', productRoutes);
 router.use('/batches', batchRoutes);
 router.use('/dashboard', dashboardRoutes);

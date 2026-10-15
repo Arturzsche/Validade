@@ -70,7 +70,7 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
         {parsed.iso && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <SemaphoreBadge semaphore={semaphore} days={days} />
-            {parsed.monthOnly && <span className="text-sm text-slate-500">até {formatDateBR(parsed.iso)}</span>}
+            {parsed.monthOnly && <span className="text-sm text-stone-500">até {formatDateBR(parsed.iso)}</span>}
           </div>
         )}
       </div>

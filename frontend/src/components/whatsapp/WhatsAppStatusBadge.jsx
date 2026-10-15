@@ -9,7 +9,7 @@ export default function WhatsAppStatusBadge({ level, onClick }) {
       type="button"
       onClick={onClick}
       aria-label={`WhatsApp: ${s.label}. Abrir detalhes da conexão`}
-      className={`inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-semibold ring-1 transition-colors active:brightness-125 md:hover:brightness-125 ${s.chip}`}
+      className={`inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-extrabold ring-1 transition-transform motion-safe:active:scale-95 motion-safe:md:hover:scale-105 ${s.chip}`}
     >
       <WhatsAppGlyph />
       <span className="relative flex h-2 w-2" aria-hidden="true">

@@ -3,8 +3,8 @@ import { brl } from '../../lib/money.js';
 
 function IconButton({ label, onClick, children, tone = 'slate' }) {
   const tones = {
-    slate: 'text-slate-600 active:bg-slate-100 md:hover:bg-slate-100 md:hover:text-slate-900',
-    red: 'text-slate-500 active:bg-red-50 md:hover:bg-red-50 md:hover:text-red-600',
+    slate: 'text-stone-600 active:bg-stone-100 md:hover:bg-stone-100 md:hover:text-stone-900',
+    red: 'text-stone-500 active:bg-red-50 md:hover:bg-red-50 md:hover:text-red-600',
   };
   return (
     <button
@@ -12,7 +12,7 @@ function IconButton({ label, onClick, children, tone = 'slate' }) {
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`grid h-9 w-9 place-items-center rounded-lg transition-colors ${tones[tone]}`}
+      className={`grid h-10 w-10 place-items-center rounded-full transition-all motion-safe:active:scale-90 ${tones[tone]}`}
     >
       {children}
     </button>
@@ -23,18 +23,18 @@ function IconButton({ label, onClick, children, tone = 'slate' }) {
 export default function CatalogItem({ product, onEdit, onDelete }) {
   const onShelf = product.activeBatches > 0;
   return (
-    <li className="flex items-center gap-3 px-4 py-3 sm:gap-4 sm:px-5">
-      <ProductThumb src={product.imageUrl} name={product.name} size="sm" />
+    <li className="flex items-center gap-3 px-4 py-3 transition-colors sm:gap-4 sm:px-5 md:hover:bg-amber-50/60">
+      <ProductThumb product={product} size="sm" />
 
       <div className="min-w-0 flex-1">
-        <p className="line-clamp-2 font-medium leading-snug text-slate-900 sm:line-clamp-1">{product.name}</p>
-        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-500">
-          <span className="text-sm font-semibold tabular-nums text-slate-900">{brl(product.price)}</span>
+        <p className="line-clamp-2 font-extrabold leading-snug text-stone-900 sm:line-clamp-1">{product.name}</p>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-stone-500">
+          <span className="text-sm font-black tabular-nums text-emerald-700">{brl(product.price)}</span>
           {product.costPrice != null && <span className="whitespace-nowrap">custo {brl(product.costPrice)}</span>}
           <span className="font-mono tracking-tight">{product.barcode}</span>
           {onShelf && (
-            <span className="whitespace-nowrap rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
-              {product.activeBatches} na prateleira
+            <span className="whitespace-nowrap rounded-full bg-amber-100 px-2 py-0.5 text-xs font-extrabold text-amber-800">
+              🧺 {product.activeBatches} na prateleira
             </span>
           )}
         </div>

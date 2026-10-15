@@ -129,11 +129,11 @@ export default function BarcodeScanner({ onDetected, onManualEntry, ignoreCode }
   if (status === 'error') {
     const e = ERRORS[errorKind] ?? ERRORS.generic;
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 rounded-3xl bg-slate-900 px-6 py-10 text-center text-white">
+      <div className="flex h-full flex-col items-center justify-center gap-4 rounded-3xl bg-stone-900 px-6 py-10 text-center text-white">
         <CameraOffIcon />
         <div>
           <p className="text-lg font-bold">{e.title}</p>
-          <p className="mt-1 text-sm text-slate-300">{e.text}</p>
+          <p className="mt-1 text-sm text-stone-300">{e.text}</p>
         </div>
         <div className="flex w-full max-w-xs flex-col gap-3">
           <Button onClick={onManualEntry} block>
@@ -183,7 +183,7 @@ export default function BarcodeScanner({ onDetected, onManualEntry, ignoreCode }
             onClick={toggleTorch}
             aria-pressed={torch.on}
             aria-label={torch.on ? 'Desligar lanterna' : 'Ligar lanterna'}
-            className={`w-14 !px-0 ${torch.on ? '!bg-amber-400 !text-slate-900' : ''}`}
+            className={`w-14 !px-0 ${torch.on ? '!bg-amber-400 !text-stone-900' : ''}`}
           >
             <FlashIcon />
           </Button>
@@ -207,7 +207,7 @@ const FlashIcon = () => (
 );
 
 const CameraOffIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-12 w-12 text-slate-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+  <svg viewBox="0 0 24 24" className="h-12 w-12 text-stone-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
     <path d="M3 3l18 18M10.5 5H15l2 2h2a2 2 0 0 1 2 2v8.5M17 19H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2" strokeLinecap="round" strokeLinejoin="round" />
     <path d="M9.5 10.5a3 3 0 0 0 4 4" strokeLinecap="round" />
   </svg>

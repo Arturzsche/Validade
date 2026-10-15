@@ -23,7 +23,7 @@ Store (loja / tenant) 1 ──< User
 |-----------------|-------|
 | `stores`        | Tenant. Guarda WhatsApp de destino, fuso e os limites do semáforo (`warning_days`=30, `critical_days`=15). |
 | `users`         | `OWNER` (dashboard/financeiro) ou `OPERATOR` (só registra lotes). 1 usuário = 1 loja. |
-| `products`      | Catálogo por loja; `barcode` único **dentro da loja**. `price` (venda), `cost_price` (custo, opcional) e `image_url` (foto). |
+| `products`      | Catálogo por loja; `category` (Comidas, Bebidas, Limpeza, Pets, Outros); `barcode` único **dentro da loja**. `price` (venda), `cost_price` (custo, opcional) e `image_url` (foto). |
 | `batches`       | Lote: `expiry_date`, `initial_quantity`, `quantity` (saldo), snapshots `unit_price` e `unit_cost`. |
 | `expiry_alerts` | Histórico de alertas. `UNIQUE(batch_id, level)` garante que o cron não envie duplicado. |
 
@@ -75,7 +75,9 @@ backend/src/
 | GET | `/products/barcode/:barcode` | todos | Busca após leitura da câmera (404 = produto novo) |
 | POST | `/products` | todos | Cadastro de produto |
 | PATCH | `/products/:id` | dono | Nome, preço e custo (o código de barras não muda) |
-| DELETE | `/products/:id` | dono | 409 se houver itens ativos na prateleira; arquiva se só houver histórico; apaga se não houver registros |
+| DELETE | `/products/:id` | dono | Nunca falha por chave estrangeira: arquiva se houver registros (itens na prateleira seguem no painel até a baixa); apaga se não houver |
+| PUT / DELETE | `/products/:id/photo` | todos | Foto da embalagem tirada no celular (JPEG/PNG/WebP, até 1,5 MB, conferida pelos bytes) |
+| GET | `/public/product-photos/:id?v=` | público | Imagem da foto (a tag `<img>` não envia token; URL versionada, cache imutável) |
 | **POST** | **`/batches`** | todos | **Entrada rápida**: `{ barcode, expiryDate, quantity, product? }` |
 | GET | `/batches?semaphore=red\|yellow\|green\|expired&status=&search=` | todos | Lista ordenada por validade |
 | GET / PATCH | `/batches/:id` | todos | Detalhe; baixa (`quantity`), descarte (`status`), correção de validade |

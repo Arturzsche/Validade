@@ -340,21 +340,23 @@ test('catálogo: listar, buscar, editar e excluir sem perder histórico', { skip
   await request(app).patch(`/api/products/${arroz.id}`).set(operator).send({ price: 1 }).expect(403);
   await request(app).delete(`/api/products/${arroz.id}`).set(operator).expect(403);
 
-  // Exclusão: bloqueada com estoque ativo; arquiva com histórico; apaga sem registros
-  const blocked = await request(app).delete(`/api/products/${cafe.id}`).set(owner);
-  assert.equal(blocked.status, 409);
-  assert.equal(blocked.body.error.code, 'PRODUCT_HAS_ACTIVE_STOCK');
+  // Exclusão nunca quebra: com estoque ativo arquiva (o item continua no painel até a baixa)
+  const withStock = await request(app).delete(`/api/products/${cafe.id}`).set(owner);
+  assert.equal(withStock.status, 200);
+  assert.deepEqual(withStock.body, { archived: true, onShelf: 1 });
+  const dash = await request(app).get('/api/dashboard/summary').set(owner);
+  assert.equal(dash.body.zones.green.batches, 1, 'item na prateleira continua contado no painel');
 
   const archived = await request(app).delete(`/api/products/${leite.id}`).set(owner);
-  assert.deepEqual(archived.body, { archived: true });
+  assert.deepEqual(archived.body, { archived: true, onShelf: 0 });
   assert.equal(await prisma.batch.count({ where: { productId: leite.id } }), 1, 'histórico preservado');
 
   const removed = await request(app).delete(`/api/products/${arroz.id}`).set(owner);
-  assert.deepEqual(removed.body, { archived: false });
+  assert.deepEqual(removed.body, { archived: false, onShelf: 0 });
   assert.equal(await prisma.product.count({ where: { id: arroz.id } }), 0);
 
   list = await request(app).get('/api/products').set(owner);
-  assert.deepEqual(list.body.items.map((p) => p.name), ['Café 500g']);
+  assert.deepEqual(list.body.items.map((p) => p.name), [], 'excluídos somem do catálogo');
   await request(app).get(`/api/products/barcode/${leite.barcode}`).set(owner).expect(404);
   await request(app).patch(`/api/products/${leite.id}`).set(owner).send({ price: 1 }).expect(404);
 
@@ -367,5 +369,61 @@ test('catálogo: listar, buscar, editar e excluir sem perder histórico', { skip
   assert.equal(revived.body.productCreated, true);
   assert.equal(revived.body.batch.productId, leite.id, 'mesmo produto, histórico continua ligado');
   list = await request(app).get('/api/products').set(owner);
-  assert.deepEqual(list.body.items.map((p) => p.name), ['Café 500g', 'Leite Integral 1L']);
+  assert.deepEqual(list.body.items.map((p) => p.name), ['Leite Integral 1L']);
+});
+
+test('categoria e foto tirada no celular', { skip }, async () => {
+  setNotifier(fakeNotifier());
+  const reg = await request(app).post('/api/auth/register').send({
+    storeName: 'Pet & Cia', name: 'Rui', email: 'rui@example.com', password: 'senha-forte',
+  });
+  const owner = { Authorization: `Bearer ${reg.body.token}` };
+  const other = await request(app).post('/api/auth/register').send({
+    storeName: 'Outra Loja', name: 'Bia', email: 'bia@example.com', password: 'senha-forte',
+  });
+  const stranger = { Authorization: `Bearer ${other.body.token}` };
+
+  // Categoria: padrão "Outros", aceita só as 5 opções, aparece no lote e no painel
+  const semCat = await request(app).post('/api/products').set(owner).send({ barcode: '7890000000501', name: 'Item', price: 2 });
+  assert.equal(semCat.body.category, 'OTHER');
+  await request(app).post('/api/products').set(owner).send({ barcode: '7890000000502', name: 'X', price: 2, category: 'PHARMACY' }).expect(400);
+  const entry = await request(app).post('/api/batches').set(owner)
+    .send({ barcode: '7890000000503', expiryDate: day(3), quantity: 4, product: { name: 'Ração Gato 1kg', price: 30, category: 'PETS' } });
+  assert.equal(entry.status, 201);
+  assert.equal(entry.body.batch.product.category, 'PETS');
+  assert.equal(entry.body.batch.product.photoVersion, null);
+  const productId = entry.body.batch.productId;
+  const edited = await request(app).patch(`/api/products/${semCat.body.id}`).set(owner).send({ category: 'CLEANING' });
+  assert.equal(edited.body.category, 'CLEANING');
+
+  // Foto: JPEG real (bytes mágicos), versão muda, servida em rota pública com cache e CORP liberado
+  const jpeg = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(200, 7), Buffer.from([0xff, 0xd9])]);
+  const up = await request(app).put(`/api/products/${productId}/photo`).set(owner).set('Content-Type', 'image/jpeg').send(jpeg);
+  assert.equal(up.status, 200, JSON.stringify(up.body));
+  assert.ok(up.body.photoVersion > 0);
+  const img = await request(app).get(`/api/public/product-photos/${productId}?v=${up.body.photoVersion}`).buffer(true);
+  assert.equal(img.status, 200);
+  assert.equal(img.headers['content-type'], 'image/jpeg');
+  assert.equal(img.headers['cross-origin-resource-policy'], 'cross-origin');
+  assert.match(img.headers['cache-control'], /immutable/);
+  assert.ok(Buffer.from(img.body).equals(jpeg), 'devolve exatamente os bytes enviados');
+
+  const dash = await request(app).get('/api/dashboard/summary').set(owner);
+  assert.equal(dash.body.actionItems[0].product.photoVersion, up.body.photoVersion, 'painel recebe a versão da foto');
+  assert.equal(dash.body.actionItems[0].product.category, 'PETS');
+
+  // Rejeições: tipo falso, sem corpo, grande demais, produto de outra loja
+  const fake = await request(app).put(`/api/products/${productId}/photo`).set(owner).set('Content-Type', 'image/jpeg').send(Buffer.from('<svg onload=alert(1)>'));
+  assert.equal(fake.status, 415);
+  await request(app).put(`/api/products/${productId}/photo`).set(owner).set('Content-Type', 'text/plain').send('oi').expect(415);
+  const big = await request(app).put(`/api/products/${productId}/photo`).set(owner).set('Content-Type', 'image/jpeg').send(Buffer.alloc(2 * 1024 * 1024, 1));
+  assert.equal(big.status, 413);
+  await request(app).put(`/api/products/${productId}/photo`).set(stranger).set('Content-Type', 'image/jpeg').send(jpeg).expect(404);
+
+  // Remover foto volta para o ícone; produto apagado leva a foto junto (cascade)
+  await request(app).delete(`/api/products/${productId}/photo`).set(owner).expect(204);
+  await request(app).get(`/api/public/product-photos/${productId}`).expect(404);
+  await request(app).put(`/api/products/${semCat.body.id}/photo`).set(owner).set('Content-Type', 'image/jpeg').send(jpeg).expect(200);
+  await request(app).delete(`/api/products/${semCat.body.id}`).set(owner).expect(200);
+  assert.equal(await prisma.productPhoto.count({ where: { productId: semCat.body.id } }), 0);
 });

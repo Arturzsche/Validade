@@ -122,27 +122,27 @@ export default function WhatsAppModal({ open, onClose, status, onStatus }) {
                 <h3 id="qr-title" className="sr-only">
                   QR Code de conexão
                 </h3>
-                <div className="mx-auto grid h-64 w-64 place-items-center rounded-2xl bg-white p-2 ring-1 ring-slate-200">
+                <div className="mx-auto grid h-64 w-64 place-items-center rounded-2xl bg-white p-2 ring-1 ring-stone-200">
                   {qr ? (
                     <img src={qr} alt="QR Code para conectar o WhatsApp" className="h-full w-full [image-rendering:pixelated]" />
                   ) : (
-                    <div className="flex flex-col items-center gap-2 text-slate-500">
+                    <div className="flex flex-col items-center gap-2 text-stone-500">
                       <Spinner className="h-8 w-8 text-emerald-600" />
                       <p className="text-sm">Gerando QR Code…</p>
                     </div>
                   )}
                 </div>
-                <ol className="space-y-2 text-sm text-slate-700">
+                <ol className="space-y-2 text-sm text-stone-700">
                   {['Abra o WhatsApp no celular que vai enviar os alertas', 'Toque em ⋮ (ou Configurações) › Aparelhos conectados', 'Toque em Conectar aparelho e aponte a câmera para o código'].map(
                     (step, i) => (
                       <li key={step} className="flex gap-3">
-                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-slate-900 text-xs font-bold text-white">{i + 1}</span>
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-stone-900 text-xs font-bold text-white">{i + 1}</span>
                         {step}
                       </li>
                     ),
                   )}
                 </ol>
-                <p className="text-center text-xs text-slate-500">O código se renova sozinho a cada ~20 segundos.</p>
+                <p className="text-center text-xs text-stone-500">O código se renova sozinho a cada ~20 segundos.</p>
                 <Button variant="secondary" size="md" block onClick={restart} loading={restarting}>
                   Gerar novo QR
                 </Button>
@@ -159,8 +159,8 @@ export default function WhatsAppModal({ open, onClose, status, onStatus }) {
         )}
 
         {level === 'simulated' && (
-          <p className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-600 ring-1 ring-slate-200">
-            Para enviar de verdade, configure <code className="font-mono text-slate-900">NOTIFIER=whatsapp</code> no servidor.
+          <p className="rounded-2xl bg-stone-50 p-4 text-sm text-stone-600 ring-1 ring-stone-200">
+            Para enviar de verdade, configure <code className="font-mono text-stone-900">NOTIFIER=whatsapp</code> no servidor.
           </p>
         )}
 

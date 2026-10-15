@@ -7,11 +7,11 @@ const clamp = (n) => Math.min(MAX, Math.max(0, n));
 export default function QuantityStepper({ value, onChange, label = 'Quantidade', presets = [6, 12, 24], error }) {
   const id = useId();
   const btn =
-    'grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-slate-100 text-3xl font-semibold text-slate-700 ring-1 ring-slate-300 active:bg-slate-200 disabled:opacity-40';
+    'grid h-14 w-16 shrink-0 place-items-center rounded-2xl bg-amber-100 text-3xl font-black text-amber-900 shadow-[0_3px_0_#fcd34d] transition-all active:translate-y-[2px] active:shadow-none disabled:opacity-40 motion-safe:md:hover:scale-105';
 
   return (
     <div>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-semibold text-slate-700">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-bold text-stone-700">
         {label}
       </label>
       <div className="flex items-center gap-2">
@@ -29,7 +29,7 @@ export default function QuantityStepper({ value, onChange, label = 'Quantidade',
           }}
           onFocus={(e) => e.target.select()}
           aria-invalid={Boolean(error)}
-          className="h-14 min-w-0 flex-1 rounded-2xl border-0 bg-slate-50 text-center text-2xl font-bold tabular-nums ring-1 ring-slate-300 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-500"
+          className="h-14 min-w-0 flex-1 rounded-2xl border-0 bg-white text-center text-2xl font-black tabular-nums ring-2 ring-stone-200 focus:ring-emerald-400 focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-500"
         />
         <button type="button" className={btn} onClick={() => onChange(clamp((value || 0) + 1))} aria-label="Aumentar">
           +
@@ -41,11 +41,11 @@ export default function QuantityStepper({ value, onChange, label = 'Quantidade',
             key={n}
             type="button"
             onClick={() => onChange(n)}
-            className={`h-10 flex-1 rounded-xl text-sm font-semibold ring-1 transition-colors ${
-              value === n ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-600 ring-slate-300 active:bg-slate-100'
+            className={`h-10 flex-1 rounded-full text-sm font-extrabold transition-all motion-safe:active:scale-95 ${
+              value === n ? 'bg-emerald-500 text-white shadow-[0_3px_0_#047857]' : 'bg-white text-stone-600 ring-2 ring-stone-200 md:hover:ring-stone-300'
             }`}
           >
-            {n} un.
+            <span aria-hidden="true">📦</span> {n} un.
           </button>
         ))}
       </div>

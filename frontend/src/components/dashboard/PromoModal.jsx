@@ -40,9 +40,9 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
     <Modal open={Boolean(batch)} onClose={onClose} title="Criar promoção" subtitle="Venda antes de vencer e recupere o dinheiro.">
       <div className="space-y-5">
         <div className="flex items-center gap-3">
-          <ProductThumb src={batch.product.imageUrl} name={batch.product.name} size="md" />
+          <ProductThumb product={batch.product} size="md" />
           <div className="min-w-0">
-            <p className="truncate font-semibold text-slate-900">{batch.product.name}</p>
+            <p className="truncate font-semibold text-stone-900">{batch.product.name}</p>
             <p className="text-sm font-medium text-red-700">
               {describeDays(batch.daysToExpiry)} · {batch.quantity} un.
             </p>
@@ -50,7 +50,7 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
         </div>
 
         <fieldset>
-          <legend className="mb-2 text-sm font-semibold text-slate-700">Desconto</legend>
+          <legend className="mb-2 text-sm font-semibold text-stone-700">Desconto</legend>
           <div className="flex gap-2">
             {options.map((pct) => (
               <button
@@ -59,7 +59,7 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
                 aria-pressed={discountPct === pct}
                 onClick={() => chooseDiscount(pct)}
                 className={`h-11 flex-1 rounded-xl text-sm font-bold ring-1 transition-colors ${
-                  discountPct === pct ? 'bg-slate-900 text-white ring-slate-900' : 'bg-white text-slate-700 ring-slate-300 active:bg-slate-100'
+                  discountPct === pct ? 'bg-stone-900 text-white ring-stone-900' : 'bg-white text-stone-700 ring-stone-300 active:bg-stone-100'
                 }`}
               >
                 {pct}%
@@ -68,18 +68,18 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
           </div>
         </fieldset>
 
-        <div className="grid grid-cols-2 gap-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div className="grid grid-cols-2 gap-3 rounded-2xl bg-stone-50 p-4 ring-1 ring-stone-200">
           <div>
-            <p className="text-xs font-medium text-slate-500">Preço promocional</p>
-            <p className="text-lg font-bold tabular-nums text-slate-900">
-              {brl(n.promoPrice)} <span className="text-sm font-normal text-slate-400 line-through">{brl(n.price)}</span>
+            <p className="text-xs font-medium text-stone-500">Preço promocional</p>
+            <p className="text-lg font-bold tabular-nums text-stone-900">
+              {brl(n.promoPrice)} <span className="text-sm font-normal text-stone-400 line-through">{brl(n.price)}</span>
             </p>
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Vendendo tudo, entra</p>
+            <p className="text-xs font-medium text-stone-500">Vendendo tudo, entra</p>
             <p className="text-lg font-bold tabular-nums text-emerald-700">{brl(n.recovered)}</p>
           </div>
-          <p className="col-span-2 text-sm text-slate-600">
+          <p className="col-span-2 text-sm text-stone-600">
             {n.belowCost ? (
               <>
                 Fica abaixo do custo, mas você ainda recupera {brl(n.recovered)} dos <strong>{brl(n.loss)}</strong> que iriam para o lixo.
@@ -93,7 +93,7 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
         </div>
 
         <div>
-          <label htmlFor="promo-text" className="mb-2 block text-sm font-semibold text-slate-700">
+          <label htmlFor="promo-text" className="mb-2 block text-sm font-semibold text-stone-700">
             Mensagem (pode editar)
           </label>
           <textarea
@@ -105,13 +105,13 @@ export default function PromoModal({ batch, storeName, defaultDiscountPct, onClo
               setCopyState('idle');
             }}
             rows={8}
-            className="w-full resize-none rounded-2xl rounded-tr-sm border-0 bg-[#dcf8c6] p-4 font-sans text-[15px] leading-relaxed text-slate-900 shadow-sm ring-1 ring-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+            className="w-full resize-none rounded-2xl rounded-tr-sm border-0 bg-[#dcf8c6] p-4 font-sans text-[15px] leading-relaxed text-stone-900 shadow-sm ring-1 ring-emerald-200 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
           />
         </div>
 
         {/* Ação principal sempre visível no rodapé da gaveta, mesmo com o texto longo */}
-        <div className="sticky -bottom-[max(1.25rem,env(safe-area-inset-bottom))] -mx-5 space-y-1 border-t border-slate-200 bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:-bottom-6 sm:pb-6">
-          <Button block onClick={handleCopy} className="!bg-[#25d366] !text-slate-900 active:!bg-[#1ebe5a]">
+        <div className="sticky -bottom-[max(1.25rem,env(safe-area-inset-bottom))] -mx-5 space-y-1 border-t border-stone-200 bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:-bottom-6 sm:pb-6">
+          <Button block onClick={handleCopy} className="!bg-[#25d366] !text-stone-900 active:!bg-[#1ebe5a]">
             {copyState === 'copied' ? '✓ Copiado! Cole no WhatsApp' : 'Copiar para o WhatsApp'}
           </Button>
           {copyState === 'failed' && (

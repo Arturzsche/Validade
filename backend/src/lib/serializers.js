@@ -1,6 +1,9 @@
 // Converte entidades do Prisma para o formato da API (Decimal -> number, DATE -> 'YYYY-MM-DD').
 import { describeBatch } from '../domain/expiry.js';
 
+/** Versão da foto tirada no celular (null = sem foto). Vai na URL para invalidar cache. */
+const photoVersion = (p) => (p.photoUpdatedAt ? new Date(p.photoUpdatedAt).getTime() : null);
+
 const num = (d) => (d === null || d === undefined ? null : Number(d.toString()));
 
 export function serializeProduct(p) {
@@ -11,6 +14,7 @@ export function serializeProduct(p) {
     brand: p.brand,
     category: p.category,
     imageUrl: p.imageUrl,
+    photoVersion: photoVersion(p),
     price: num(p.price),
     costPrice: num(p.costPrice),
     ...(p._count && { activeBatches: p._count.batches }), // itens na prateleira (listagem do catálogo)
@@ -41,6 +45,8 @@ export function serializeBatch(batch, store, today) {
         name: product.name,
         brand: product.brand,
         imageUrl: product.imageUrl,
+        category: product.category,
+        photoVersion: photoVersion(product),
         ...(product.price !== undefined && { price: num(product.price) }),
       },
     }),

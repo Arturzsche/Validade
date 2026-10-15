@@ -18,6 +18,8 @@ const initial = {
   suggestion: null, // dados do Open Food Facts
   modal: null, // null | 'manual' | 'newProduct'
   pendingEntry: null, // lote aguardando o cadastro do produto (fluxo 422)
+  photo: null, // { blob, previewUrl, uploaded } — foto tirada no celular
+  photoBusy: false,
   saving: false,
   apiError: null,
 };
@@ -31,12 +33,49 @@ export function useQuickEntry({ onSaved, onError }) {
 
   const barcodeRef = useRef(null);
   barcodeRef.current = state.barcode;
+  const previewRef = useRef(null); // URL da prévia local, liberada ao trocar/resetar
+
+  const setPreview = (url) => {
+    if (previewRef.current) URL.revokeObjectURL(previewRef.current);
+    previewRef.current = url;
+  };
 
   const reset = useCallback(() => {
     requestId.current += 1;
     if (barcodeRef.current) setLastCode(barcodeRef.current);
+    setPreview(null);
     setState(initial);
   }, []);
+
+  /**
+   * Foto tirada no celular. Produto já cadastrado: sobe na hora.
+   * Produto novo: fica guardada e sobe logo depois que o produto for criado (no salvar).
+   */
+  const addPhoto = useCallback(
+    async (blob) => {
+      const previewUrl = URL.createObjectURL(blob);
+      setPreview(previewUrl);
+      if (!state.product) {
+        patch({ photo: { blob, previewUrl, uploaded: false } });
+        return;
+      }
+      patch({ photoBusy: true, photo: { blob, previewUrl, uploaded: false } });
+      try {
+        const updated = await api(`/products/${state.product.id}/photo`, { method: 'PUT', body: blob });
+        setState((s) => ({
+          ...s,
+          photoBusy: false,
+          product: s.product && { ...s.product, photoVersion: updated.photoVersion },
+          photo: { blob: null, previewUrl, uploaded: true },
+        }));
+      } catch (err) {
+        patch({ photoBusy: false, photo: null });
+        setPreview(null);
+        throw new Error(errorMessage(err));
+      }
+    },
+    [state.product, patch],
+  );
 
   const handleDetected = useCallback(
     async (code) => {
@@ -87,6 +126,16 @@ export function useQuickEntry({ onSaved, onError }) {
         });
         if (id !== requestId.current) return;
         const saved = { ...res.batch, merged: res.merged, addedQuantity: entry.quantity };
+
+        // Foto de produto novo: agora que ele existe, sobe a imagem. Falhar aqui não desfaz o registro.
+        if (state.photo && !state.photo.uploaded) {
+          try {
+            const updated = await api(`/products/${res.batch.productId}/photo`, { method: 'PUT', body: state.photo.blob });
+            saved.product = { ...saved.product, photoVersion: updated.photoVersion };
+          } catch {
+            saved.photoFailed = true;
+          }
+        }
         setRecent((list) => [saved, ...list.filter((b) => b.id !== saved.id)].slice(0, 5));
         onSaved?.(saved);
         reset();
@@ -102,7 +151,7 @@ export function useQuickEntry({ onSaved, onError }) {
         patch({ saving: false, apiError: errorMessage(err) });
       }
     },
-    [state.barcode, state.draft, patch, reset, onSaved],
+    [state.barcode, state.draft, state.photo, patch, reset, onSaved],
   );
 
   const submitNewProduct = useCallback(
@@ -127,6 +176,7 @@ export function useQuickEntry({ onSaved, onError }) {
     displayProduct: state.product ?? state.draft,
     isNewProduct: !state.product && Boolean(state.draft),
     handleDetected,
+    addPhoto,
     save,
     reset,
     submitNewProduct,

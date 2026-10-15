@@ -50,7 +50,7 @@ export default function AlertRecipientForm({ connected }) {
   }
 
   return (
-    <form onSubmit={save} className="space-y-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+    <form onSubmit={save} className="space-y-3 rounded-2xl bg-stone-50 p-4 ring-1 ring-stone-200">
       <Field
         label="Número que recebe os alertas da loja"
         type="tel"

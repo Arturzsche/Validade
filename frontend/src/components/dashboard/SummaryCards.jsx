@@ -3,23 +3,29 @@ import { brl } from '../../lib/money.js';
 const items = (n) => `${n} ${n === 1 ? 'item' : 'itens'}`;
 
 const tones = {
-  red: { tag: 'bg-red-50 text-red-700', dot: 'bg-red-500', value: 'text-red-600' },
-  amber: { tag: 'bg-amber-50 text-amber-800', dot: 'bg-amber-400', value: 'text-amber-700' },
-  green: { tag: 'bg-emerald-50 text-emerald-700', dot: 'bg-emerald-500', value: 'text-slate-900' },
+  red: { tag: 'bg-rose-100 text-rose-700', emoji: '🔥', value: 'text-rose-600', blob: 'bg-rose-100' },
+  amber: { tag: 'bg-amber-100 text-amber-800', emoji: '📅', value: 'text-amber-600', blob: 'bg-amber-100' },
+  green: { tag: 'bg-emerald-100 text-emerald-800', emoji: '✅', value: 'text-emerald-700', blob: 'bg-emerald-100' },
 };
 
 /** Card branco e calmo: a cor aparece só na etiqueta e no número principal. */
 function StatCard({ tone, tag, value, caption, note, className = '' }) {
   const t = tones[tone];
   return (
-    <section className={`rounded-2xl bg-white p-5 shadow-card ring-1 ring-slate-900/[0.04] ${className}`}>
-      <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${t.tag}`}>
-        <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} aria-hidden="true" />
+    <section
+      className={`motion-safe:animate-pop-in relative overflow-hidden rounded-3xl bg-white p-5 shadow-card ring-1 ring-stone-900/5 transition-transform duration-200 motion-safe:md:hover:-translate-y-1 ${className}`}
+    >
+      {/* bolha decorativa no canto: cor só no detalhe */}
+      <span className={`pointer-events-none absolute -top-8 -right-8 h-24 w-24 rounded-full opacity-60 ${t.blob}`} aria-hidden="true" />
+      <span className={`relative inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-extrabold ${t.tag}`}>
+        <span aria-hidden="true">{t.emoji}</span>
         {tag}
       </span>
-      <p className={`mt-4 text-3xl font-bold tracking-tight tabular-nums ${t.value}`}>{value}</p>
-      <p className="mt-1 text-sm text-slate-600">{caption}</p>
-      {note && <p className="mt-3 border-t border-slate-100 pt-3 text-sm text-slate-500">{note}</p>}
+      <p className={`relative mt-4 text-3xl font-black tracking-tight tabular-nums ${t.value}`}>{value}</p>
+      <p className="relative mt-1 text-sm font-semibold text-stone-500">{caption}</p>
+      {note && (
+        <p className="relative mt-3 rounded-2xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">🧺 {note}</p>
+      )}
     </section>
   );
 }
