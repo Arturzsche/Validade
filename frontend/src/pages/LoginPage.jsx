@@ -4,6 +4,7 @@ import { errorMessage } from '../lib/api.js';
 import Field from '../components/ui/Field.jsx';
 import Button from '../components/ui/Button.jsx';
 import { toE164BR } from '../lib/whatsapp.js';
+import { LogoMark } from '../components/brand/Logo.jsx';
 
 export default function LoginPage() {
   const { login, register } = useAuth();
@@ -36,12 +37,10 @@ export default function LoginPage() {
     <div className="flex min-h-dvh flex-col bg-slate-900 px-5 pt-[max(3rem,env(safe-area-inset-top))] pb-8">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-8 text-center text-white">
-          <div className="mb-4 flex justify-center gap-2" aria-hidden="true">
-            <span className="h-4 w-4 rounded-full bg-red-500" />
-            <span className="h-4 w-4 rounded-full bg-amber-400" />
-            <span className="h-4 w-4 rounded-full bg-emerald-500" />
-          </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">Validade</h1>
+          <LogoMark className="mx-auto mb-3 h-16 w-16" />
+          <h1 className="text-3xl font-extrabold tracking-tight">
+            <span className="text-emerald-400">i</span>Valida
+          </h1>
           <p className="mt-2 text-slate-400">Nada vence esquecido na prateleira.</p>
         </div>
 

@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useWhatsAppStatus } from '../../hooks/useWhatsAppStatus.js';
 import WhatsAppStatusBadge from '../whatsapp/WhatsAppStatusBadge.jsx';
 import WhatsAppModal from '../whatsapp/WhatsAppModal.jsx';
+import Logo from '../brand/Logo.jsx';
 
 const NAV = [
   { to: '/painel', label: 'Painel', icon: GaugeIcon },
@@ -22,13 +23,19 @@ export default function AppShell({ title, actions, width = 'md', children }) {
   const whatsapp = useWhatsAppStatus({ enabled: isOwner });
   const [whatsAppOpen, setWhatsAppOpen] = useState(false);
 
+  useEffect(() => {
+    document.title = `${title} · iValida`;
+  }, [title]);
+
   return (
     <div className={`min-h-dvh ${isOwner ? 'pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0' : ''}`}>
       <header className="sticky top-0 z-30 bg-slate-900 pt-[env(safe-area-inset-top)] text-white">
         <div className={`mx-auto flex h-16 items-center justify-between gap-3 px-4 ${widths[width]}`}>
-          <div className="min-w-0">
-            <p className="truncate text-xs font-medium uppercase tracking-wider text-slate-400">{session.store.name}</p>
-            <h1 className="truncate text-lg font-bold">{title}</h1>
+          <div className="flex min-w-0 items-center gap-3">
+            <Logo markClassName="h-8 w-8 shrink-0" className="shrink-0" />
+            {/* Título da página no cabeçalho só onde há espaço; no celular ele vai para o conteúdo */}
+            <span className="hidden h-6 w-px bg-white/15 sm:block" aria-hidden="true" />
+            <p className="hidden truncate text-sm font-medium text-slate-300 sm:block">{title}</p>
           </div>
 
           <div className="flex shrink-0 items-center gap-1">

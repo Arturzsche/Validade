@@ -11,7 +11,7 @@ export function buildAlertMessage({ level, batch, store, today }) {
 
   if (level === 'EXPIRED') {
     return [
-      `⛔ *Validade · ${store.name}*`,
+      `⛔ *iValida · ${store.name}*`,
       `*${product}* venceu em ${brDate(info.expiryDate)}.`,
       `Estoque: ${units} · Dinheiro perdido: *${brl(info.valueAtRisk)}*`,
       `👉 Retire da área de venda e registre a baixa no app.`,
@@ -24,7 +24,7 @@ export function buildAlertMessage({ level, batch, store, today }) {
   const promo = brl(fromCents(promoPriceCents(batch, pct)));
 
   return [
-    `🔴 *Validade · ${store.name}*`,
+    `🔴 *iValida · ${store.name}*`,
     `*${product}* vence ${when}.`,
     `Estoque: ${units} · Dinheiro parado: *${brl(info.valueAtRisk)}*`,
     `💡 Sugestão: promoção de *${pct}% OFF* — de ${price} por *${promo}* para vender antes de vencer.`,

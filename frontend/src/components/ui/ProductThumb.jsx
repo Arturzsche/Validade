@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import CategoryIcon from './CategoryIcon.jsx';
 
 const sizes = {
   sm: 'h-10 w-10 rounded-lg',
@@ -6,19 +7,10 @@ const sizes = {
   lg: 'h-20 w-20 rounded-2xl',
 };
 
-/** Foto do produto com fallback para ícone de caixa (produto sem foto ou link quebrado). */
+/** Foto do produto; sem foto (ou link quebrado), um ícone de mercadoria pela categoria do nome. */
 export default function ProductThumb({ src, name, size = 'lg' }) {
   const [failed, setFailed] = useState(false);
-  if (!src || failed) {
-    return (
-      <div className={`grid shrink-0 place-items-center bg-slate-100 text-slate-400 ${sizes[size]}`} aria-hidden="true">
-        <svg viewBox="0 0 24 24" className="h-1/2 w-1/2" fill="none" stroke="currentColor" strokeWidth="1.6">
-          <path d="M21 8 12 3 3 8v8l9 5 9-5V8z" strokeLinejoin="round" />
-          <path d="m3 8 9 5 9-5M12 13v8" strokeLinejoin="round" />
-        </svg>
-      </div>
-    );
-  }
+  if (!src || failed) return <CategoryIcon name={name} className={sizes[size]} />;
   return (
     <img
       src={src}

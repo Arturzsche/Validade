@@ -1,49 +1,37 @@
-/**
- * A frase que o dono lê primeiro: o que fazer hoje, em linguagem de balcão.
- */
-function greeting(now = new Date()) {
-  const h = now.getHours();
-  if (h < 12) return 'Bom dia';
-  if (h < 18) return 'Boa tarde';
-  return 'Boa noite';
-}
+// Cabeçalho do painel: de quem é a loja e o que fazer hoje, em linguagem de balcão.
 
 const qty = (n, one, many) => `${n} ${n === 1 ? one : many}`;
 
-export default function TodaySummary({ name, items }) {
-  const firstName = name?.split(' ')[0];
+function TodayMessage({ items }) {
   const promo = items.filter((b) => b.semaphore === 'red' && !b.expired).length;
   const expired = items.filter((b) => b.expired).length;
   const thisMonth = items.filter((b) => b.semaphore === 'yellow').length;
+  const strong = 'font-semibold text-slate-900';
 
-  let message;
   if (promo || expired) {
-    const parts = [];
-    if (promo) parts.push(<strong key="p" className="font-semibold text-slate-900">{qty(promo, 'produto', 'produtos')} para colocar em promoção</strong>);
-    if (expired) {
-      // "3 produtos para colocar em promoção e 1 para tirar…" / sozinho: "1 produto para tirar…"
-      const label = promo ? `${expired} para tirar da prateleira` : `${qty(expired, 'produto', 'produtos')} para tirar da prateleira`;
-      parts.push(<strong key="e" className="font-semibold text-slate-900">{label}</strong>);
-    }
-    message = (
+    const expiredLabel = promo
+      ? `${expired} para tirar da prateleira`
+      : `${qty(expired, 'produto', 'produtos')} para tirar da prateleira`;
+    return (
       <>
-        Hoje você tem {parts[0]}
-        {parts[1] && <> e {parts[1]}</>}.
+        Hoje você tem {promo > 0 && <strong className={strong}>{qty(promo, 'produto', 'produtos')} para colocar em promoção</strong>}
+        {promo > 0 && expired > 0 && ' e '}
+        {expired > 0 && <strong className={strong}>{expiredLabel}</strong>}.
       </>
     );
-  } else if (thisMonth) {
-    message = <>Nada urgente hoje. {qty(thisMonth, 'produto vence', 'produtos vencem')} este mês, fique de olho.</>;
-  } else {
-    message = <>Tudo em dia. Nenhum produto perto de vencer. 🎉</>;
   }
+  if (thisMonth) return <>Nada urgente hoje. {qty(thisMonth, 'produto vence', 'produtos vencem')} este mês, fique de olho.</>;
+  return <>Tudo em dia. Nenhum produto perto de vencer. 🎉</>;
+}
 
+export default function TodaySummary({ storeName, items }) {
   return (
     <header>
-      <h2 className="text-2xl font-bold tracking-tight text-slate-900">
-        {greeting()}
-        {firstName ? `, ${firstName}` : ''}
-      </h2>
-      <p className="mt-1 text-base text-slate-600">{message}</p>
+      <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">Visão geral da loja</p>
+      <h2 className="mt-1 text-2xl font-bold tracking-tight text-slate-900 md:text-3xl">{storeName}</h2>
+      <p className="mt-2 max-w-xl text-base text-slate-600">
+        <TodayMessage items={items} />
+      </p>
     </header>
   );
 }

@@ -66,7 +66,7 @@ router.post('/test', async (req, res) => {
   try {
     const result = await notifier.send({
       to: store.whatsappPhone,
-      message: `✅ *Validade · ${store.name}*\nTudo certo! Os alertas de vencimento da loja vão chegar neste número.`,
+      message: `✅ *iValida · ${store.name}*\nTudo certo! Os alertas de vencimento da loja vão chegar neste número.`,
     });
     res.json({ ok: true, channel: notifier.channel, to: store.whatsappPhone, messageId: result?.id ?? null });
   } catch (err) {

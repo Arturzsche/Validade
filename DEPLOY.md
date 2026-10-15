@@ -1,4 +1,4 @@
-# Guia de Deploy — Validade (MVP)
+# Guia de Deploy — iValida (MVP)
 
 Guia para colocar o Validade no ar com custo mínimo, sem perder a sessão do WhatsApp a cada deploy.
 

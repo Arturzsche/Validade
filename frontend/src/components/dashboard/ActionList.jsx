@@ -11,7 +11,7 @@ function Group({ title, dot, hint, items, onPromo }) {
           {items.length} {items.length === 1 ? 'item' : 'itens'} · {hint}
         </span>
       </h3>
-      <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/70">
+      <ul className="divide-y divide-slate-100 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-slate-900/[0.04]">
         {items.map((batch) => (
           <ActionItem key={batch.id} batch={batch} onPromo={onPromo} />
         ))}
@@ -27,7 +27,7 @@ export default function ActionList({ items, total, thresholds, onPromo }) {
 
   if (!items.length) {
     return (
-      <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-sm ring-1 ring-slate-200/70">
+      <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-card ring-1 ring-slate-900/[0.04]">
         <p className="text-3xl" aria-hidden="true">🎉</p>
         <p className="mt-2 font-semibold text-slate-900">Nada para resolver</p>
         <p className="mt-1 text-sm text-slate-500">Quando algum produto estiver perto de vencer, ele aparece aqui.</p>
@@ -37,6 +37,7 @@ export default function ActionList({ items, total, thresholds, onPromo }) {
 
   return (
     <div className="space-y-6">
+      <h2 className="text-lg font-bold text-slate-900">O que fazer agora</h2>
       <Group
         title="Ação urgente"
         dot="bg-red-500"

@@ -7,7 +7,7 @@ import { flushPendingAlerts } from './modules/alerts/alerts.service.js';
 
 const app = createApp();
 const server = app.listen(env.PORT, () => {
-  console.log(`🚀 Validade API ouvindo em http://localhost:${env.PORT}`);
+  console.log(`🚀 iValida API ouvindo em http://localhost:${env.PORT}`);
 });
 
 // Canal de notificação (NOTIFIER=whatsapp imprime o QR aqui no terminal na 1ª vez)

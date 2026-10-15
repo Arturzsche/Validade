@@ -12,7 +12,7 @@ const tones = {
 function StatCard({ tone, tag, value, caption, note, className = '' }) {
   const t = tones[tone];
   return (
-    <section className={`rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200/70 ${className}`}>
+    <section className={`rounded-2xl bg-white p-5 shadow-card ring-1 ring-slate-900/[0.04] ${className}`}>
       <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${t.tag}`}>
         <span className={`h-1.5 w-1.5 rounded-full ${t.dot}`} aria-hidden="true" />
         {tag}

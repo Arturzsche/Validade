@@ -35,6 +35,7 @@ export default function ScanPage() {
   return (
     <AppShell title="Registrar produtos">
       <main className="mx-auto max-w-md space-y-5 px-4 pt-4 pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+        <h1 className="text-lg font-bold text-slate-900 sm:hidden">Registrar produtos</h1>
         {flow.step === 'scan' && (
           <>
             <div className="h-[min(62dvh,520px)]">

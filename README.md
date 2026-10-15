@@ -1,4 +1,4 @@
-# Validade
+# iValida
 
 SaaS B2B para pequenos comércios (mercadinhos, farmácias, pet shops) evitarem perdas com produtos vencidos:
 entrada rápida de lotes por código de barras, dashboard "semáforo" e alertas automáticos de queima de estoque.

@@ -20,7 +20,7 @@ export default function ActionItem({ batch, onPromo }) {
         <button
           type="button"
           onClick={() => onPromo(batch)}
-          className={`inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white font-medium text-slate-700 shadow-sm transition-colors active:bg-slate-100 md:hover:border-slate-400 md:hover:bg-slate-50 ${
+          className={`inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white font-semibold text-slate-800 shadow-sm transition-colors active:bg-emerald-50 md:hover:border-emerald-500 md:hover:bg-emerald-50 md:hover:text-emerald-800 ${
             compact ? 'h-8 px-2.5 text-[13px]' : 'h-9 px-3 text-sm'
           }`}
         >
@@ -67,11 +67,18 @@ export default function ActionItem({ batch, onPromo }) {
   );
 }
 
+/** Etiqueta de preço com "%" no verde da marca — o mesmo símbolo do logo iValida. */
 function TagIcon() {
   return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-      <path d="M10.6 2.5H4.5a2 2 0 0 0-2 2v6.1a2 2 0 0 0 .6 1.4l5.4 5.4a2 2 0 0 0 2.8 0l5.4-5.4a2 2 0 0 0 0-2.8L11.9 3a2 2 0 0 0-1.3-.5z" strokeLinejoin="round" />
-      <circle cx="6.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
+    <svg viewBox="0 0 20 20" className="h-4 w-4 text-emerald-600" aria-hidden="true">
+      <path
+        d="M2.5 4.2v4.6c0 .5.2.9.5 1.2l6.6 6.6a1.7 1.7 0 0 0 2.4 0l4.6-4.6a1.7 1.7 0 0 0 0-2.4L10 3a1.7 1.7 0 0 0-1.2-.5H4.2c-.9 0-1.7.8-1.7 1.7Z"
+        fill="currentColor"
+      />
+      <circle cx="6" cy="6" r="1.1" fill="#fff" />
+      <path d="M8.6 12.6l3.6-3.6" stroke="#fff" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="9" cy="9.3" r=".8" fill="#fff" />
+      <circle cx="11.8" cy="12.2" r=".8" fill="#fff" />
     </svg>
   );
 }

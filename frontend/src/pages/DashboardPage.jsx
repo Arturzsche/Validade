@@ -6,6 +6,7 @@ import SummaryCards from '../components/dashboard/SummaryCards.jsx';
 import ActionList from '../components/dashboard/ActionList.jsx';
 import PromoModal from '../components/dashboard/PromoModal.jsx';
 import TodaySummary from '../components/dashboard/TodaySummary.jsx';
+import StockHealth from '../components/dashboard/StockHealth.jsx';
 import Button from '../components/ui/Button.jsx';
 import Spinner from '../components/ui/Spinner.jsx';
 
@@ -55,7 +56,10 @@ export default function DashboardPage() {
                 Mostrando os últimos dados carregados. {error}
               </p>
             )}
-            <TodaySummary name={session.user.name} items={data.actionItems} />
+            <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_22rem] md:items-end md:gap-8">
+              <TodaySummary storeName={session.store.name} items={data.actionItems} />
+              <StockHealth zones={data.zones} />
+            </div>
             <SummaryCards zones={data.zones} thresholds={data.thresholds} />
             <ActionList
               items={data.actionItems}
