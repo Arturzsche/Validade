@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { barcode, dateOnly, idParams, pagination, uuid } from '../../lib/schemas.js';
-import { serializeBatch } from '../../lib/serializers.js';
+import { serializeBatch, viewFor } from '../../lib/serializers.js';
 import { requireOwner } from '../../middlewares/auth.js';
 import { validate } from '../../middlewares/validate.js';
 import { productInput } from '../products/products.routes.js';
@@ -47,9 +47,7 @@ router.post('/', validate({ body: createSchema }), async (req, res) => {
     input: req.valid.body,
   });
 
-  service.triggerImmediateAlertIfNeeded(batch, store, today);
-
-  res.status(merged ? 200 : 201).json({ merged, productCreated, batch: serializeBatch(batch, store, today) });
+  res.status(merged ? 200 : 201).json({ merged, productCreated, batch: serializeBatch(batch, store, today, viewFor(req.user)) });
 });
 
 // GET /api/batches?semaphore=red|yellow|green|expired&status=&productId=&search=&page=&pageSize=
@@ -62,24 +60,21 @@ router.get('/', validate({ query: listQuery }), async (req, res) => {
     today,
     filters: req.valid.query,
   });
-  res.json({ items: items.map((b) => serializeBatch(b, store, today)), total, page, pageSize });
+  res.json({ items: items.map((b) => serializeBatch(b, store, today, viewFor(req.user))), total, page, pageSize });
 });
 
 // GET /api/batches/:id
 router.get('/:id', validate({ params: idParams }), async (req, res) => {
   const { store, today } = await service.getStoreContext(req.user.storeId);
   const batch = await service.findOwnBatch(req.user.storeId, req.valid.params.id);
-  res.json(serializeBatch(batch, store, today));
+  res.json(serializeBatch(batch, store, today, viewFor(req.user)));
 });
 
 // PATCH /api/batches/:id — corrigir validade, dar baixa (quantity), descartar (status)
 router.patch('/:id', validate({ params: idParams, body: updateSchema }), async (req, res) => {
   const { store, today } = await service.getStoreContext(req.user.storeId);
   const batch = await service.updateBatch({ storeId: req.user.storeId, id: req.valid.params.id, data: req.valid.body });
-  if (req.valid.body.expiryDate || req.valid.body.status === 'ACTIVE') {
-    service.triggerImmediateAlertIfNeeded(batch, store, today);
-  }
-  res.json(serializeBatch(batch, store, today));
+  res.json(serializeBatch(batch, store, today, viewFor(req.user)));
 });
 
 // DELETE /api/batches/:id — remover lançamento errado (dono)

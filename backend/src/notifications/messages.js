@@ -1,32 +1,37 @@
 // Textos das notificações (formatação do WhatsApp: *negrito*, _itálico_).
-import { describeBatch, fromCents, promoPriceCents } from '../domain/expiry.js';
+import { fromCents } from '../domain/expiry.js';
 
 const brl = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const brDate = (ymd) => ymd.split('-').reverse().join('/');
 
-export function buildAlertMessage({ level, batch, store, today }) {
-  const info = describeBatch(batch, store, today);
-  const product = batch.product.name;
-  const units = `${batch.quantity} un.`;
+/**
+ * Relatório diário (uma mensagem por loja por dia). `risk.items` já vem do mais urgente ao menos.
+ * Formatação do WhatsApp: *negrito*.
+ */
+const MAX_LINES = 5;
+const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+const when = (d) => (d < 0 ? `venceu há ${plural(-d, 'dia', 'dias')}` : d === 0 ? 'vence *hoje*' : d === 1 ? 'vence amanhã' : `vence em ${d} dias`);
 
-  if (level === 'EXPIRED') {
-    return [
-      `⛔ *iValida · ${store.name}*`,
-      `*${product}* venceu em ${brDate(info.expiryDate)}.`,
-      `Estoque: ${units} · Dinheiro perdido: *${brl(info.valueAtRisk)}*`,
-      `👉 Retire da área de venda e registre a baixa no app.`,
-    ].join('\n');
+function lines(items) {
+  const shown = items.slice(0, MAX_LINES).map((i) => `• ${i.name} (${i.quantity} un.) — ${when(i.daysToExpiry)}`);
+  if (items.length > MAX_LINES) shown.push(`• … e mais ${plural(items.length - MAX_LINES, 'item', 'itens')}`);
+  return shown;
+}
+
+export function buildDailyReport({ store, risk, appUrl }) {
+  const header = `☀️ *Bom dia! Relatório iValida · ${store.name}*`;
+  if (!risk.items.length) {
+    return [header, '', 'Tudo em dia: nenhum produto perto de vencer hoje. ✅'].join('\n');
   }
 
-  const when = info.daysToExpiry === 0 ? '*hoje*' : `em *${info.daysToExpiry} dia(s)* (${brDate(info.expiryDate)})`;
-  const pct = store.suggestedDiscountPct;
-  const price = brl(Number(batch.unitPrice.toString()));
-  const promo = brl(fromCents(promoPriceCents(batch, pct)));
-
-  return [
-    `🔴 *iValida · ${store.name}*`,
-    `*${product}* vence ${when}.`,
-    `Estoque: ${units} · Dinheiro parado: *${brl(info.valueAtRisk)}*`,
-    `💡 Sugestão: promoção de *${pct}% OFF* — de ${price} por *${promo}* para vender antes de vencer.`,
-  ].join('\n');
+  const expired = risk.items.filter((i) => i.daysToExpiry < 0);
+  const promo = risk.items.filter((i) => i.daysToExpiry >= 0);
+  const out = [
+    header,
+    '',
+    `Você tem *${plural(risk.items.length, 'produto', 'produtos')}* a vencer${expired.length ? ' ou já vencidos' : ''}, somando *${brl(fromCents(risk.valueCents))}* em risco.`,
+  ];
+  if (promo.length) out.push('', `🏷️ *Para colocar em promoção (${promo.length}):*`, ...lines(promo));
+  if (expired.length) out.push('', `⛔ *Já venceram — tirar da prateleira (${expired.length}):*`, ...lines(expired));
+  out.push('', appUrl ? `👉 Crie as promoções no painel: ${appUrl.replace(/\/$/, '')}/painel` : '👉 Abra o painel do iValida para criar as promoções.');
+  return out.join('\n').replace(/\u00a0/g, ' ');
 }

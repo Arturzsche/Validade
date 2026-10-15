@@ -88,6 +88,7 @@ model Store {
   products Product[]
   batches  Batch[]
   alerts   ExpiryAlert[]
+  reports  DailyReport[]
 
   @@map("stores")
 }
@@ -206,7 +207,39 @@ model Batch {
 }
 
 // -----------------------------------------------------------------------------
-// Histórico de alertas (idempotência do cron + auditoria de envios)
+// Relatório diário do WhatsApp: UMA mensagem por loja por dia (substitui o envio por produto)
+// -----------------------------------------------------------------------------
+
+model DailyReport {
+  id      String   @id @default(uuid()) @db.Uuid
+  storeId String   @map("store_id") @db.Uuid
+  date    DateTime @db.Date // dia (no fuso da loja) a que o relatório se refere
+
+  channel   AlertChannel @default(CONSOLE)
+  status    AlertStatus  @default(PENDING)
+  attempts  Int          @default(0)
+  recipient String?
+  message   String? // texto efetivamente enviado (montado na hora do envio)
+  error     String?
+
+  // Resumo no momento do envio (histórico/auditoria)
+  itemsCount  Int     @default(0) @map("items_count")
+  valueAtRisk Decimal @default(0) @map("value_at_risk") @db.Decimal(12, 2)
+
+  sentAt    DateTime? @map("sent_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  // Um relatório por loja por dia -> o cron pode rodar N vezes (ou em N instâncias) sem spam
+  @@unique([storeId, date])
+  @@index([status])
+  @@map("daily_reports")
+}
+
+// -----------------------------------------------------------------------------
+// Histórico de alertas por produto (legado: o envio agora é pelo relatório diário;
+// a tabela fica para não perder o histórico já gravado) (idempotência do cron + auditoria de envios)
 // -----------------------------------------------------------------------------
 
 model ExpiryAlert {

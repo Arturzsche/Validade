@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../../lib/prisma.js';
 import { HttpError, notFound } from '../../lib/httpError.js';
 import { idParams } from '../../lib/schemas.js';
-import { serializeProduct } from '../../lib/serializers.js';
+import { serializeProduct, viewFor } from '../../lib/serializers.js';
 import { validate } from '../../middlewares/validate.js';
 
 // Foto da embalagem tirada pelo celular do operador. O app já reduz a imagem no aparelho
@@ -48,7 +48,7 @@ productPhotoRoutes.put(
       }),
       prisma.product.update({ where: { id: product.id }, data: { photoUpdatedAt: now } }),
     ]);
-    res.json(serializeProduct(updated));
+    res.json(serializeProduct(updated, viewFor(req.user)));
   },
 );
 

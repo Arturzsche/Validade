@@ -1,8 +1,7 @@
 import { prisma } from '../../lib/prisma.js';
 import { notFound, unprocessable } from '../../lib/httpError.js';
-import { diffInDays, todayInTimeZone } from '../../lib/dates.js';
-import { alertLevelFor, expiryDateFilterFor } from '../../domain/expiry.js';
-import { checkBatchNow } from '../alerts/alerts.service.js';
+import { todayInTimeZone } from '../../lib/dates.js';
+import { expiryDateFilterFor } from '../../domain/expiry.js';
 
 const withProduct = {
   product: { select: { id: true, barcode: true, name: true, brand: true, imageUrl: true, category: true, photoUpdatedAt: true } },
@@ -70,13 +69,6 @@ export async function quickEntry({ storeId, userId, input }) {
   });
 
   return result;
-}
-
-/** Se o lote já entrou na zona vermelha, alerta na hora (sem esperar o cron do dia seguinte). */
-export function triggerImmediateAlertIfNeeded(batch, store, today) {
-  const level = alertLevelFor(diffInDays(today, batch.expiryDate), store);
-  if (!level) return;
-  checkBatchNow(batch.id).catch((err) => console.error('[alerts] falha no alerta imediato', err));
 }
 
 export async function listBatches({ storeId, store, today, filters }) {

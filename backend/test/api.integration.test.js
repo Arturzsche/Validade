@@ -42,7 +42,7 @@ before(async () => {
   app = (await import('../src/app.js')).createApp();
 
   setNotifier(fakeNotifier());
-  await prisma.$executeRawUnsafe('TRUNCATE stores, users, products, batches, expiry_alerts CASCADE');
+  await prisma.$executeRawUnsafe('TRUNCATE stores, users, products, batches, expiry_alerts, daily_reports CASCADE');
 });
 
 after(async () => {
@@ -59,7 +59,7 @@ const waitFor = async (fn, ms = 2000) => {
   throw new Error('timeout');
 };
 
-test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip }, async () => {
+test('fluxo completo: cadastro, entrada rápida, semáforo e relatório diário', { skip }, async () => {
   // --- Onboarding
   const reg = await request(app).post('/api/auth/register').send({
     storeName: 'Mercadinho da Esquina',
@@ -95,7 +95,9 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
   assert.equal(green.status, 201);
   assert.equal(green.body.productCreated, true);
   assert.equal(green.body.batch.semaphore, 'green');
-  assert.equal(green.body.batch.riskBasis, 'price');
+  // Operador não vê dinheiro: custo e valor em risco são do dono
+  assert.equal(green.body.batch.valueAtRisk, undefined);
+  assert.equal(green.body.batch.unitCost, undefined);
 
   // Mesmo produto + mesma validade => soma no lote existente
   const merged = await request(app)
@@ -118,21 +120,16 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
     .send({ barcode: '7894900011517', expiryDate: day(20), quantity: 10 });
   assert.equal(yellow.body.batch.semaphore, 'yellow');
 
-  // Vermelho (custo cadastrado) -> dispara alerta imediato
+  // Vermelho (custo cadastrado): NÃO manda mensagem na hora — vai no relatório da manhã
   const red = await request(app)
     .post('/api/batches')
     .set(operator)
     .send({ barcode: '7894900011517', expiryDate: day(5), quantity: 8 });
   assert.equal(red.status, 201);
   assert.equal(red.body.batch.semaphore, 'red');
-  assert.equal(red.body.batch.riskBasis, 'cost');
-  assert.equal(red.body.batch.valueAtRisk, 16.8); // 8 x 2,10
-
-  await waitFor(async () => (await prisma.expiryAlert.count({ where: { status: 'SENT' } })) === 1);
-  assert.equal(sent.length, 1);
-  assert.equal(sent[0].to, '+5511999998888');
-  assert.match(sent[0].message, /Iogurte Natural/);
-  assert.match(sent[0].message, /30% OFF/);
+  const redAsOwner = await request(app).get(`/api/batches/${red.body.batch.id}`).set(owner);
+  assert.equal(redAsOwner.body.riskBasis, 'cost');
+  assert.equal(redAsOwner.body.valueAtRisk, 16.8); // 8 x 2,10
 
   // Vencido (registrado com atraso), sem custo
   await request(app)
@@ -163,20 +160,40 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
   const yellows = await request(app).get('/api/batches?semaphore=yellow').set(operator);
   assert.equal(yellows.body.total, 1);
 
-  // --- Cron: idempotente
-  await waitFor(async () => (await prisma.expiryAlert.count({ where: { status: 'SENT' } })) === 2);
+  // --- Relatório diário: UMA mensagem por loja, com o total em risco
+  await new Promise((r) => setTimeout(r, 100));
+  assert.equal(sent.length, 0, 'nenhuma mensagem por produto na entrada');
   const [first] = await runExpiryCheck();
-  assert.equal(first.created, 0); // tudo já foi alertado na entrada
+  assert.equal(first.created, 1);
+  assert.equal(first.sent, 1);
+  assert.equal(sent.length, 1);
+  assert.equal(sent[0].to, '+5511999998888');
+  assert.match(sent[0].message, /Bom dia/);
+  assert.match(sent[0].message, /2 produtos\* a vencer ou já vencidos, somando \*R\$ 48,80\*/);
+  assert.match(sent[0].message, /Iogurte Natural \(8 un\.\) — vence em 5 dias/);
+  assert.match(sent[0].message, /Já venceram[\s\S]*Pão de Forma/);
+  assert.doesNotMatch(sent[0].message, /Leite Condensado|12 un/); // verde e amarelo ficam fora
+
+  // Idempotente: o cron pode rodar de novo no mesmo dia sem repetir a mensagem
   const [second] = await runExpiryCheck();
   assert.equal(second.created, 0);
-  assert.equal(await prisma.expiryAlert.count(), 2);
-  assert.equal(sent.length, 2);
+  assert.equal(second.sent, 0);
+  assert.equal(await prisma.dailyReport.count(), 1);
+  assert.equal(sent.length, 1);
 
-  // Cron "daqui a 16 dias": o amarelo vira vermelho e o vermelho vira vencido
+  // Dono pode reenviar o de hoje (botão de teste); operador não
+  await request(app).post('/api/alerts/run?resend=1').set(operator).expect(403);
+  const resent = await request(app).post('/api/alerts/run?resend=1').set(owner);
+  assert.equal(resent.body.sent, 1);
+  assert.equal(sent.length, 2);
+  assert.equal(await prisma.dailyReport.count(), 1);
+
+  // Cron "daqui a 16 dias": o amarelo vira vermelho e o vermelho vira vencido -> novo relatório (3 itens)
   const future = new Date(Date.now() + 16 * 24 * 3600 * 1000);
   const [later] = await runExpiryCheck({ now: future });
-  assert.equal(later.created, 2);
-  assert.equal(later.sent, 2);
+  assert.equal(later.created, 1);
+  assert.equal(later.sent, 1);
+  assert.match(sent[2].message, /3 produtos/);
 
   // --- Baixa total encerra o lote e ele sai do semáforo
   const patched = await request(app).patch(`/api/batches/${red.body.batch.id}`).set(operator).send({ quantity: 0 });
@@ -184,19 +201,22 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
   const dash2 = await request(app).get('/api/dashboard/summary').set(owner);
   assert.equal(dash2.body.zones.red.batches, 1);
 
-  // --- Falha de envio é registrada e re-tentada
+  // --- Falha de envio é registrada e re-tentada no mesmo dia
+  const nextDay = new Date(future.getTime() + 24 * 3600 * 1000);
   setNotifier(fakeNotifier({ send: async () => { throw new Error('erro do provedor'); } }));
-  await request(app)
-    .post('/api/batches')
-    .set(operator)
-    .send({ barcode: '7894900011517', expiryDate: day(1), quantity: 2 })
-    .expect(201);
-  await waitFor(async () => (await prisma.expiryAlert.count({ where: { status: 'FAILED' } })) === 1);
+  const [failed] = await runExpiryCheck({ now: nextDay });
+  assert.equal(failed.failed, 1);
+  assert.equal((await request(app).get('/api/alerts?status=FAILED').set(owner)).body.total, 1);
   setNotifier(fakeNotifier());
-  const [retry] = await runExpiryCheck();
+  const [retry] = await runExpiryCheck({ now: nextDay });
+  assert.equal(retry.created, 0);
   assert.equal(retry.sent, 1);
   const alerts = await request(app).get('/api/alerts?status=FAILED').set(owner);
   assert.equal(alerts.body.total, 0);
+  const history = await request(app).get('/api/alerts').set(owner);
+  assert.equal(history.body.total, 3);
+  assert.equal(history.body.items[0].status, 'SENT');
+  assert.equal(typeof history.body.items[0].valueAtRisk, 'number');
 
   // --- Isolamento entre lojas
   const other = await request(app).post('/api/auth/register').send({
@@ -208,21 +228,21 @@ test('fluxo completo: cadastro, entrada rápida, semáforo e alertas', { skip },
   assert.equal(otherList.body.total, 0);
 });
 
-test('WhatsApp offline: alertas esperam sem gastar tentativa e saem na reconexão', { skip }, async () => {
+test('WhatsApp offline: relatório espera sem gastar tentativa e saem na reconexão', { skip }, async () => {
   const reg = await request(app).post('/api/auth/register').send({
     storeName: 'Farmácia Central', whatsappPhone: '+5511988887777', name: 'Ana', email: 'ana@example.com', password: 'senha-forte',
   });
   const auth = { Authorization: `Bearer ${reg.body.token}` };
   const storeId = reg.body.store.id;
-  const alertsOf = () => prisma.expiryAlert.findMany({ where: { storeId }, orderBy: { createdAt: 'asc' } });
+  const alertsOf = () => prisma.dailyReport.findMany({ where: { storeId }, orderBy: { createdAt: 'asc' } });
 
   // 1) Canal desconectado (ex: aguardando QR) no momento do cron
   setNotifier(fakeNotifier({ ready: false }));
   await request(app).post('/api/batches').set(auth)
     .send({ barcode: '7896004000015', expiryDate: day(3), quantity: 20, product: { name: 'Dipirona 500mg', price: 12.9, costPrice: 5.4 } })
     .expect(201);
-  await new Promise((r) => setTimeout(r, 200)); // alerta imediato roda em segundo plano
   const [cron] = await runExpiryCheck({ storeId });
+  assert.equal(cron.created, 1);
   assert.equal(cron.waiting, 1);
   let [alert] = await alertsOf();
   assert.equal(alert.status, 'PENDING');
@@ -245,7 +265,11 @@ test('WhatsApp offline: alertas esperam sem gastar tentativa e saem na reconexã
   [alert] = await alertsOf();
   assert.equal(alert.status, 'SENT');
   assert.equal(delivered[0].to, '+5511988887777');
-  assert.match(delivered[0].message, /Dipirona 500mg/);
+  assert.match(delivered[0].message, /Bom dia/);
+  assert.match(delivered[0].message, /Dipirona 500mg \(20 un\.\)/);
+  assert.match(delivered[0].message, /R\$ 108,00/); // 20 x 5,40
+  assert.equal(alert.itemsCount, 1);
+  assert.equal(Number(alert.valueAtRisk), 108);
 
   // 4) Endpoint de diagnóstico e de mensagem de teste
   const status = await request(app).get('/api/notifications/status').set(auth);
@@ -337,8 +361,19 @@ test('catálogo: listar, buscar, editar e excluir sem perder histórico', { skip
   assert.equal(edited.body.price, 29.9);
   assert.equal(edited.body.costPrice, 21);
   await request(app).patch(`/api/products/${arroz.id}`).set(owner).send({ barcode: '7890000000999' }).expect(400);
+  // Operador: vê o catálogo sem custo, corrige nome/categoria, mas não mexe em preço nem exclui
   await request(app).patch(`/api/products/${arroz.id}`).set(operator).send({ price: 1 }).expect(403);
+  await request(app).patch(`/api/products/${arroz.id}`).set(operator).send({ name: 'Arroz', costPrice: 1 }).expect(403);
   await request(app).delete(`/api/products/${arroz.id}`).set(operator).expect(403);
+  const opList = await request(app).get('/api/products').set(operator);
+  assert.equal(opList.status, 200);
+  assert.equal(opList.body.items[0].price, 29.9);
+  assert.equal('costPrice' in opList.body.items[0], false);
+  const renamed = await request(app).patch(`/api/products/${arroz.id}`).set(operator).send({ name: 'Arroz Tipo 1 (5kg)', category: 'FOOD' });
+  assert.equal(renamed.status, 200);
+  assert.equal(renamed.body.name, 'Arroz Tipo 1 (5kg)');
+  assert.equal(renamed.body.costPrice, undefined);
+  assert.equal((await request(app).get(`/api/products/${arroz.id}`).set(owner)).body.costPrice, 21);
 
   // Exclusão nunca quebra: com estoque ativo arquiva (o item continua no painel até a baixa)
   const withStock = await request(app).delete(`/api/products/${cafe.id}`).set(owner);

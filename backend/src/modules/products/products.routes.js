@@ -2,9 +2,9 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../lib/prisma.js';
 import { Prisma } from '@prisma/client';
-import { conflict, notFound } from '../../lib/httpError.js';
+import { conflict, forbidden, notFound } from '../../lib/httpError.js';
 import { barcode, idParams, money, pagination } from '../../lib/schemas.js';
-import { serializeProduct } from '../../lib/serializers.js';
+import { serializeProduct, viewFor } from '../../lib/serializers.js';
 import { requireOwner } from '../../middlewares/auth.js';
 import { validate } from '../../middlewares/validate.js';
 
@@ -70,7 +70,7 @@ router.get('/', validate({ query: listQuery }), async (req, res) => {
     }),
     prisma.product.count({ where }),
   ]);
-  res.json({ items: items.map(serializeProduct), total, page, pageSize });
+  res.json({ items: items.map((p) => serializeProduct(p, viewFor(req.user))), total, page, pageSize });
 });
 
 // GET /api/products/barcode/:barcode — usado logo após a leitura da câmera
@@ -79,12 +79,12 @@ router.get('/barcode/:barcode', validate({ params: z.object({ barcode }) }), asy
     where: { storeId: req.user.storeId, barcode: req.valid.params.barcode, ...visible },
   });
   if (!product) throw notFound('Produto ainda não cadastrado nesta loja');
-  res.json(serializeProduct(product));
+  res.json(serializeProduct(product, viewFor(req.user)));
 });
 
 // GET /api/products/:id
 router.get('/:id', validate({ params: idParams }), async (req, res) => {
-  res.json(serializeProduct(await findOwnProduct(req.user.storeId, req.valid.params.id)));
+  res.json(serializeProduct(await findOwnProduct(req.user.storeId, req.valid.params.id), viewFor(req.user)));
 });
 
 // POST /api/products — operador também pode cadastrar (produto novo no balcão).
@@ -98,14 +98,15 @@ router.post('/', validate({ body: productInput }), async (req, res) => {
   const product = existing
     ? await prisma.product.update({ where: { id: existing.id }, data: { ...data, archivedAt: null } })
     : await prisma.product.create({ data: { ...data, storeId } });
-  res.status(201).json(serializeProduct(product));
+  res.status(201).json(serializeProduct(product, viewFor(req.user)));
 });
 
-// PATCH /api/products/:id — nome, preço e custo são decisões do dono.
+// PATCH /api/products/:id — operador corrige nome/marca/categoria; preço e custo são decisões do dono.
 // O código de barras não muda (é a identidade do produto na leitura).
+const OWNER_ONLY_FIELDS = ['price', 'costPrice'];
+
 router.patch(
   '/:id',
-  requireOwner,
   validate({
     params: idParams,
     body: productInput
@@ -115,13 +116,16 @@ router.patch(
       .refine((d) => Object.keys(d).length > 0, 'Nada para atualizar'),
   }),
   async (req, res) => {
+    if (req.user.role !== 'OWNER' && OWNER_ONLY_FIELDS.some((f) => f in req.valid.body)) {
+      throw forbidden('Só o dono da loja pode alterar preço e custo');
+    }
     const current = await findOwnProduct(req.user.storeId, req.valid.params.id);
     const product = await prisma.product.update({
       where: { id: current.id },
       data: req.valid.body,
       include: withActiveCount,
     });
-    res.json(serializeProduct(product));
+    res.json(serializeProduct(product, viewFor(req.user)));
   },
 );
 

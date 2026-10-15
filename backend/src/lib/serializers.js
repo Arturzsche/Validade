@@ -1,13 +1,21 @@
 // Converte entidades do Prisma para o formato da API (Decimal -> number, DATE -> 'YYYY-MM-DD').
 import { describeBatch } from '../domain/expiry.js';
+import { toDateOnly } from './dates.js';
 
 /** Versão da foto tirada no celular (null = sem foto). Vai na URL para invalidar cache. */
 const photoVersion = (p) => (p.photoUpdatedAt ? new Date(p.photoUpdatedAt).getTime() : null);
 
 const num = (d) => (d === null || d === undefined ? null : Number(d.toString()));
 
-export function serializeProduct(p) {
-  return {
+/**
+ * O que o usuário pode ver. Operador (balcão/estoque) não vê custo nem dinheiro em risco:
+ * esses números são do dono. Preço de venda continua visível (está na etiqueta da gôndola).
+ */
+export const viewFor = (user) => ({ financial: user?.role === 'OWNER' });
+const OWNER_VIEW = { financial: true };
+
+export function serializeProduct(p, { financial } = OWNER_VIEW) {
+  const out = {
     id: p.id,
     barcode: p.barcode,
     name: p.name,
@@ -21,11 +29,13 @@ export function serializeProduct(p) {
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };
+  if (!financial) delete out.costPrice;
+  return out;
 }
 
-export function serializeBatch(batch, store, today) {
+export function serializeBatch(batch, store, today, { financial } = OWNER_VIEW) {
   const { product, ...b } = batch;
-  return {
+  const out = {
     id: b.id,
     productId: b.productId,
     initialQuantity: b.initialQuantity,
@@ -51,6 +61,12 @@ export function serializeBatch(batch, store, today) {
       },
     }),
   };
+  if (!financial) {
+    delete out.unitCost;
+    delete out.valueAtRisk;
+    delete out.riskBasis;
+  }
+  return out;
 }
 
 export function serializeStore(s) {
@@ -67,20 +83,19 @@ export function serializeStore(s) {
   };
 }
 
-export function serializeAlert(a) {
+export function serializeDailyReport(r) {
   return {
-    id: a.id,
-    batchId: a.batchId,
-    level: a.level,
-    channel: a.channel,
-    status: a.status,
-    recipient: a.recipient,
-    message: a.message,
-    error: a.error,
-    attempts: a.attempts,
-    quantityAtAlert: a.quantityAtAlert,
-    valueAtRisk: num(a.valueAtRisk),
-    sentAt: a.sentAt,
-    createdAt: a.createdAt,
+    id: r.id,
+    date: toDateOnly(r.date),
+    channel: r.channel,
+    status: r.status,
+    recipient: r.recipient,
+    message: r.message,
+    error: r.error,
+    attempts: r.attempts,
+    itemsCount: r.itemsCount,
+    valueAtRisk: num(r.valueAtRisk),
+    sentAt: r.sentAt,
+    createdAt: r.createdAt,
   };
 }

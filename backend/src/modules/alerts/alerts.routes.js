@@ -2,45 +2,36 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../../lib/prisma.js';
 import { pagination } from '../../lib/schemas.js';
-import { serializeAlert } from '../../lib/serializers.js';
+import { serializeDailyReport } from '../../lib/serializers.js';
 import { requireOwner } from '../../middlewares/auth.js';
 import { validate } from '../../middlewares/validate.js';
-import { runExpiryCheck } from './alerts.service.js';
+import { resendTodayReport, runExpiryCheck } from './alerts.service.js';
 
 const router = Router();
 router.use(requireOwner);
 
 const listQuery = z.object({
-  level: z.enum(['WARNING', 'CRITICAL', 'EXPIRED']).optional(),
   status: z.enum(['PENDING', 'SENT', 'FAILED']).optional(),
   ...pagination,
 });
 
-// GET /api/alerts — histórico de notificações da loja
+// GET /api/alerts — histórico dos relatórios diários enviados no WhatsApp
 router.get('/', validate({ query: listQuery }), async (req, res) => {
-  const { level, status, page, pageSize } = req.valid.query;
-  const where = { storeId: req.user.storeId, level, status };
+  const { status, page, pageSize } = req.valid.query;
+  const where = { storeId: req.user.storeId, status };
   const [items, total] = await prisma.$transaction([
-    prisma.expiryAlert.findMany({
-      where,
-      include: { batch: { select: { product: { select: { name: true, barcode: true } } } } },
-      orderBy: { createdAt: 'desc' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.expiryAlert.count({ where }),
+    prisma.dailyReport.findMany({ where, orderBy: { date: 'desc' }, skip: (page - 1) * pageSize, take: pageSize }),
+    prisma.dailyReport.count({ where }),
   ]);
-  res.json({
-    items: items.map((a) => ({ ...serializeAlert(a), product: a.batch.product })),
-    total,
-    page,
-    pageSize,
-  });
+  res.json({ items: items.map(serializeDailyReport), total, page, pageSize });
 });
 
-// POST /api/alerts/run — dispara agora a mesma verificação do cron (só para a loja do usuário)
-router.post('/run', async (req, res) => {
-  const [result] = await runExpiryCheck({ storeId: req.user.storeId });
+// POST /api/alerts/run — roda agora a verificação do cron só para esta loja.
+// ?resend=1 apaga o relatório de hoje e envia de novo (teste do dono).
+router.post('/run', validate({ query: z.object({ resend: z.stringbool().default(false) }) }), async (req, res) => {
+  const result = req.valid.query.resend
+    ? await resendTodayReport(req.user.storeId)
+    : (await runExpiryCheck({ storeId: req.user.storeId }))[0];
   res.json(result);
 });
 

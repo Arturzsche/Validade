@@ -10,6 +10,8 @@ const schema = z.object({
   PORT: z.coerce.number().int().positive().default(3333),
   DATABASE_URL: z.string().min(1, 'DATABASE_URL é obrigatória'),
   CORS_ORIGIN: z.string().default('*'),
+  // Endereço público do app (link no relatório diário do WhatsApp). Opcional.
+  PUBLIC_APP_URL: z.url().optional(),
 
   JWT_SECRET: z.string().min(16, 'JWT_SECRET precisa ter ao menos 16 caracteres'),
   JWT_EXPIRES_IN: z.string().default('7d'),
