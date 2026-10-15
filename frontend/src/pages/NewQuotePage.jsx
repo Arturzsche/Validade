@@ -11,6 +11,23 @@ import { formatBRPhone, toE164BR } from '../lib/whatsapp.js';
 import { isoDateIn, itemTotalCents, parseQuantity } from '../lib/quotes.js';
 
 let nextKey = 1;
+
+// O prestador costuma repetir a mesma chave PIX e as mesmas condições: lembramos neste aparelho
+const PAYMENT_KEY = 'orcamentos.lastPayment';
+function loadLastPayment() {
+  try {
+    return { paymentTerms: '', pixKey: '', ...JSON.parse(localStorage.getItem(PAYMENT_KEY)) };
+  } catch {
+    return { paymentTerms: '', pixKey: '' };
+  }
+}
+function saveLastPayment(payment) {
+  try {
+    localStorage.setItem(PAYMENT_KEY, JSON.stringify(payment));
+  } catch {
+    // modo privado / storage bloqueado: só não lembra da próxima vez
+  }
+}
 const emptyItem = () => ({ key: nextKey++, description: '', quantity: '1', unitPriceCents: null });
 
 /**
@@ -24,6 +41,7 @@ export default function NewQuotePage() {
   const [creatingClient, setCreatingClient] = useState(false);
   const [items, setItems] = useState(() => [emptyItem()]);
   const [expiresAt, setExpiresAt] = useState(() => isoDateIn(15));
+  const [payment, setPayment] = useState(loadLastPayment);
   const [touched, setTouched] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -83,6 +101,8 @@ export default function NewQuotePage() {
         body: {
           clientId,
           expiresAt: expiresAt || null,
+          paymentTerms: payment.paymentTerms.trim() || null,
+          pixKey: payment.pixKey.trim() || null,
           items: parsed.map((i) => ({
             description: i.description.trim(),
             quantity: i.quantityValue,
@@ -90,6 +110,7 @@ export default function NewQuotePage() {
           })),
         },
       });
+      saveLastPayment({ paymentTerms: payment.paymentTerms.trim(), pixKey: payment.pixKey.trim() });
       navigate(`/orcamentos/${quote.id}`, { replace: true });
     } catch (err) {
       setError(errorMessage(err));
@@ -206,6 +227,30 @@ export default function NewQuotePage() {
           <Button variant="outline" size="md" block onClick={addItem}>
             + Adicionar Item
           </Button>
+        </section>
+
+        {/* ---------- Pagamento: aparece no PDF e passa confiança ao cliente */}
+        <section aria-labelledby="payment-title" className="space-y-3">
+          <h2 id="payment-title" className="text-lg font-semibold text-navy-900">
+            Pagamento
+          </h2>
+          <Field
+            label="Condições de Pagamento"
+            placeholder="Ex: 50% no início e 50% na entrega"
+            value={payment.paymentTerms}
+            onChange={(e) => setPayment((p) => ({ ...p, paymentTerms: e.target.value }))}
+            maxLength={500}
+            autoComplete="off"
+          />
+          <Field
+            label="Chave PIX"
+            placeholder="CPF, CNPJ, e-mail, telefone ou chave aleatória"
+            value={payment.pixKey}
+            onChange={(e) => setPayment((p) => ({ ...p, pixKey: e.target.value }))}
+            maxLength={140}
+            autoComplete="off"
+            hint="Facilite o pagamento da entrada"
+          />
         </section>
 
         {/* ---------- Validade */}

@@ -22,6 +22,8 @@ export function serializeQuote(q) {
     totalAmount: num(q.totalAmount),
     expiresAt: q.expiresAt ? toDateOnly(q.expiresAt) : null,
     respondedAt: q.respondedAt,
+    paymentTerms: q.paymentTerms ?? null,
+    pixKey: q.pixKey ?? null,
     createdAt: q.createdAt,
     ...(q.client && { client: { id: q.client.id, name: q.client.name, phone: q.client.phone, address: q.client.address } }),
     ...(q.items && {

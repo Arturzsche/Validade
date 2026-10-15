@@ -3,7 +3,7 @@
 import { Document, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import { brl } from '../../lib/money.js';
 import { formatDateBR } from '../../lib/dates.js';
-import { QUOTE_STATUS, quoteNumber } from '../../lib/quotes.js';
+import { quoteNumber } from '../../lib/quotes.js';
 import { formatBRPhone } from '../../lib/whatsapp.js';
 
 const NAVY = '#132642';
@@ -33,7 +33,12 @@ const s = StyleSheet.create({
   totalBox: { marginTop: 12, alignSelf: 'flex-end', width: 220, flexDirection: 'row', justifyContent: 'space-between', backgroundColor: '#f1f5fb', paddingVertical: 10, paddingHorizontal: 12, borderRadius: 4 },
   totalLabel: { fontFamily: 'Helvetica-Bold', color: NAVY, fontSize: 11 },
   totalValue: { fontFamily: 'Helvetica-Bold', color: NAVY, fontSize: 14 },
-  notes: { marginTop: 26, padding: 12, borderWidth: 1, borderColor: LINE, borderRadius: 4, lineHeight: 1.5 },
+  validity: { marginTop: 10, textAlign: 'right', color: SLATE, fontSize: 9 },
+  payment: { marginTop: 24, backgroundColor: '#f1f5f9', borderRadius: 4, padding: 14, flexDirection: 'row' },
+  paymentCol: { flex: 1, paddingRight: 12 },
+  paymentLabel: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: SLATE, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 4 },
+  paymentText: { fontSize: 10.5, lineHeight: 1.45 },
+  pixKey: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: NAVY },
   footer: { position: 'absolute', bottom: 28, left: 44, right: 44, flexDirection: 'row', justifyContent: 'space-between', fontSize: 8, color: SLATE },
 });
 
@@ -85,13 +90,24 @@ export default function QuotePdf({ quote, provider }) {
           </View>
         </View>
 
-        <View style={s.notes} wrap={false}>
-          <Text>
-            {quote.expiresAt ? `Orçamento válido até ${formatDateBR(quote.expiresAt)}. ` : ''}
-            Situação: {QUOTE_STATUS[quote.status].label}.
-          </Text>
-          <Text style={s.muted}>Para aprovar, basta responder a esta proposta pelo WhatsApp.</Text>
-        </View>
+        {quote.expiresAt && <Text style={s.validity}>Proposta válida até {formatDateBR(quote.expiresAt)}</Text>}
+
+        {(quote.paymentTerms || quote.pixKey) && (
+          <View style={s.payment} wrap={false}>
+            {quote.paymentTerms && (
+              <View style={s.paymentCol}>
+                <Text style={s.paymentLabel}>Condições de pagamento</Text>
+                <Text style={s.paymentText}>{quote.paymentTerms}</Text>
+              </View>
+            )}
+            {quote.pixKey && (
+              <View style={s.paymentCol}>
+                <Text style={s.paymentLabel}>Chave PIX</Text>
+                <Text style={s.pixKey}>{quote.pixKey}</Text>
+              </View>
+            )}
+          </View>
+        )}
 
         <View style={s.footer} fixed>
           <Text>

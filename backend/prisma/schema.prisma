@@ -70,6 +70,10 @@ model Quote {
   totalAmount Decimal     @default(0) @map("total_amount") @db.Decimal(12, 2) // soma dos itens (calculada no servidor)
   expiresAt   DateTime?   @map("expires_at") @db.Date // validade da proposta
   respondedAt DateTime?   @map("responded_at") @db.Timestamptz(3) // quando foi aprovado/rejeitado
+
+  // Cobrança: aparecem no PDF para o cliente saber como e quanto pagar
+  paymentTerms String? @map("payment_terms") // ex: "50% de entrada e 50% na entrega"
+  pixKey       String? @map("pix_key") // chave PIX para receber a entrada
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
 
   // Restrict: excluir um cliente com orçamentos não apaga o histórico financeiro

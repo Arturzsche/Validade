@@ -20,7 +20,7 @@ marceneiros, técnicos de manutenção). O nome é provisório: troque em `front
 |---------------|----------|
 | `users`       | O prestador (login). Todos os dados são escopados por ele. |
 | `clients`     | `name`, `phone` (WhatsApp, E.164), `address`. Pertence a um prestador. |
-| `quotes`      | `status` (`PENDING` Pendente · `APPROVED` Aprovado · `REJECTED` Rejeitado), `totalAmount`, `expiresAt`, `respondedAt`. |
+| `quotes`      | `status` (`PENDING` Pendente · `APPROVED` Aprovado · `REJECTED` Rejeitado), `totalAmount`, `expiresAt`, `respondedAt`, `paymentTerms` e `pixKey` (opcionais, vão no PDF). |
 | `quote_items` | `description`, `quantity` (aceita fração: 2,5 m), `unitPrice`, `position` (ordem no orçamento). |
 
 - `totalAmount` é calculado **no servidor** (soma em centavos de `quantity × unitPrice`), nunca enviado pelo cliente.
@@ -54,6 +54,7 @@ src/
 | GET | `/quotes/summary` | Dashboard: aprovados no mês, aguardando resposta, taxa de fechamento, últimos 5 |
 | GET / POST | `/quotes` | Lista (`?status=&clientId=`) / cria `{ clientId, expiresAt?, items[] }` |
 | GET / PATCH / DELETE | `/quotes/:id` | Detalhe com itens / muda `status`, `expiresAt` ou substitui `items` / exclui |
+| PATCH | `/quotes/:id/status` | Prestador marca `APPROVED` / `REJECTED` (grava `respondedAt`) ou volta para `PENDING` |
 | GET | `/notifications/status` | Estado da sessão do WhatsApp |
 | GET / POST | `/notifications/whatsapp/qr`, `/reconnect` | QR e reconexão (só `WHATSAPP_ADMIN_EMAILS`) |
 

@@ -42,6 +42,8 @@ async function main() {
         createdAt: daysAgo(q.created),
         expiresAt: dateIn(15 - q.created),
         respondedAt: q.responded === undefined ? null : daysAgo(q.responded),
+        paymentTerms: '50% de entrada e 50% na conclusão do serviço',
+        pixKey: 'carlos.prestador@email.com',
         items: { create: items },
       },
     });

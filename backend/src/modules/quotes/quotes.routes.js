@@ -19,9 +19,25 @@ const itemInput = z.object({
   unitPrice: money,
 });
 
+// Texto livre opcional: string vazia vira null (campo apagado no formulário)
+const optionalText = (max) =>
+  z
+    .string()
+    .trim()
+    .max(max)
+    .nullable()
+    .optional()
+    .transform((v) => (v ? v : v === undefined ? undefined : null));
+
+const paymentInfo = {
+  paymentTerms: optionalText(500),
+  pixKey: optionalText(140),
+};
+
 const createSchema = z.object({
   clientId: uuid,
   expiresAt: dateOnly.nullable().optional(),
+  ...paymentInfo,
   items: z.array(itemInput).min(1, 'Inclua ao menos um item').max(100),
 });
 
@@ -30,6 +46,7 @@ const updateSchema = z
     status: z.enum(STATUSES),
     expiresAt: dateOnly.nullable(),
     items: z.array(itemInput).min(1).max(100), // substitui todos os itens
+    ...paymentInfo,
   })
   .partial()
   .refine((d) => Object.keys(d).length > 0, 'Nada para atualizar');
@@ -105,10 +122,10 @@ router.get('/', validate({ query: listQuery }), async (req, res) => {
 
 // POST /api/quotes — { clientId, expiresAt?, items: [{ description, quantity, unitPrice }] }
 router.post('/', validate({ body: createSchema }), async (req, res) => {
-  const { clientId, expiresAt, items } = req.valid.body;
+  const { clientId, expiresAt, items, paymentTerms, pixKey } = req.valid.body;
   await findOwnClient(req.user.id, clientId);
   const quote = await prisma.quote.create({
-    data: { clientId, expiresAt, totalAmount: totalOf(items), items: { create: withPositions(items) } },
+    data: { clientId, expiresAt, paymentTerms, pixKey, totalAmount: totalOf(items), items: { create: withPositions(items) } },
     include: withDetails,
   });
   res.status(201).json(serializeQuote(quote));
@@ -119,10 +136,30 @@ router.get('/:id', validate({ params: idParams }), async (req, res) => {
   res.json(serializeQuote(await findOwnQuote(req.user.id, req.valid.params.id)));
 });
 
+// PATCH /api/quotes/:id/status — o prestador marca a resposta do cliente
+// (Aprovado / Rejeitado registram a data da resposta; Pendente limpa, para não contar nas métricas)
+router.patch(
+  '/:id/status',
+  validate({ params: idParams, body: z.object({ status: z.enum(STATUSES) }) }),
+  async (req, res) => {
+    const current = await findOwnQuote(req.user.id, req.valid.params.id);
+    const { status } = req.valid.body;
+    const quote =
+      status === current.status
+        ? current
+        : await prisma.quote.update({
+            where: { id: current.id },
+            data: { status, respondedAt: respondedAtFor(status) },
+            include: withDetails,
+          });
+    res.json(serializeQuote(quote));
+  },
+);
+
 // PATCH /api/quotes/:id — status (aprovar/rejeitar), validade ou itens
 router.patch('/:id', validate({ params: idParams, body: updateSchema }), async (req, res) => {
   const current = await findOwnQuote(req.user.id, req.valid.params.id);
-  const { status, expiresAt, items } = req.valid.body;
+  const { status, expiresAt, items, paymentTerms, pixKey } = req.valid.body;
 
   const quote = await prisma.$transaction(async (tx) => {
     if (items) await tx.quoteItem.deleteMany({ where: { quoteId: current.id } });
@@ -130,6 +167,8 @@ router.patch('/:id', validate({ params: idParams, body: updateSchema }), async (
       where: { id: current.id },
       data: {
         expiresAt,
+        paymentTerms,
+        pixKey,
         ...(status && status !== current.status && { status, respondedAt: respondedAtFor(status) }),
         ...(items && { totalAmount: totalOf(items), items: { create: withPositions(items) } }),
       },

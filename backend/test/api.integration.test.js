@@ -143,6 +143,53 @@ test('clientes e orçamentos: CRUD, total calculado no servidor e resumo', { ski
   assert.equal((await request(app).get('/api/quotes').set(other)).body.total, 0);
 });
 
+test('cobrança (condições + PIX) e status manual pelo prestador', { skip }, async () => {
+  const auth = await signUp('cobranca@example.com', 'Bruno Marceneiro');
+  const client = (await request(app).post('/api/clients').set(auth).send({ name: 'Paula Reis', phone: '+5511912345678' })).body;
+
+  const created = await request(app).post('/api/quotes').set(auth).send({
+    clientId: client.id,
+    paymentTerms: '  50% de entrada e 50% na entrega  ',
+    pixKey: 'bruno@exemplo.com',
+    items: [{ description: 'Armário sob medida', unitPrice: 2400 }],
+  });
+  assert.equal(created.status, 201, JSON.stringify(created.body));
+  assert.equal(created.body.paymentTerms, '50% de entrada e 50% na entrega'); // aparado
+  assert.equal(created.body.pixKey, 'bruno@exemplo.com');
+  const id = created.body.id;
+
+  // Campos opcionais: orçamento sem cobrança continua válido; string vazia apaga
+  const plain = await request(app).post('/api/quotes').set(auth).send({ clientId: client.id, items: [{ description: 'Visita', unitPrice: 80 }] });
+  assert.equal(plain.body.paymentTerms, null);
+  const cleared = await request(app).patch(`/api/quotes/${id}`).set(auth).send({ pixKey: '' });
+  assert.equal(cleared.body.pixKey, null);
+  assert.equal(cleared.body.paymentTerms, '50% de entrada e 50% na entrega', 'PATCH parcial não apaga o que não foi enviado');
+
+  // PATCH /:id/status — aprovar registra a data; o Dashboard já reflete
+  const approved = await request(app).patch(`/api/quotes/${id}/status`).set(auth).send({ status: 'APPROVED' });
+  assert.equal(approved.status, 200);
+  assert.equal(approved.body.status, 'APPROVED');
+  assert.ok(Date.now() - new Date(approved.body.respondedAt).getTime() < 60_000);
+  let summary = (await request(app).get('/api/quotes/summary').set(auth)).body;
+  assert.deepEqual(summary.approvedThisMonth, { count: 1, amount: 2400 });
+  assert.equal(summary.pending.count, 1);
+
+  // Rejeitar e voltar para pendente (limpa a data para não contar nas métricas)
+  const rejected = await request(app).patch(`/api/quotes/${id}/status`).set(auth).send({ status: 'REJECTED' });
+  assert.equal(rejected.body.status, 'REJECTED');
+  assert.ok(rejected.body.respondedAt);
+  const reopened = await request(app).patch(`/api/quotes/${id}/status`).set(auth).send({ status: 'PENDING' });
+  assert.equal(reopened.body.status, 'PENDING');
+  assert.equal(reopened.body.respondedAt, null);
+  summary = (await request(app).get('/api/quotes/summary').set(auth)).body;
+  assert.equal(summary.pending.count, 2);
+  assert.deepEqual(summary.closeRate, { rate: null, approved: 0, answered: 0 });
+
+  await request(app).patch(`/api/quotes/${id}/status`).set(auth).send({ status: 'PAGO' }).expect(400);
+  const other = await signUp('intruso@example.com', 'Intruso');
+  await request(app).patch(`/api/quotes/${id}/status`).set(other).send({ status: 'APPROVED' }).expect(404);
+});
+
 test('WhatsApp: status para todos; QR e reconexão só para WHATSAPP_ADMIN_EMAILS', { skip }, async () => {
   setNotifier(fakeNotifier({ ready: false, qr: '2@fake-qr' }));
   const admin = await signUp('admin@example.com', 'Admin');

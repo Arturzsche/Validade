@@ -31,3 +31,30 @@ export function isoDateIn(days, now = new Date()) {
   const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + days);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+
+/**
+ * Mensagem que o prestador envia pelo próprio WhatsApp (*negrito* é a formatação do WhatsApp).
+ * O PDF é gerado no aparelho, então a mensagem avisa que ele segue na conversa.
+ */
+export function buildShareMessage(quote, provider, formatMoney) {
+  const firstName = quote.client.name.trim().split(/\s+/)[0];
+  const total = formatMoney(quote.totalAmount).replace(/ /g, ' ');
+  const pdfLine = quote.pixKey
+    ? 'Na sequência te envio o PDF com todos os detalhes da proposta e a chave PIX para a entrada.'
+    : 'Na sequência te envio o PDF com todos os detalhes da proposta.';
+  return [
+    `Olá *${firstName}*! Aqui é ${provider.name}. Segue o seu orçamento detalhado no valor de *${total}*.`,
+    '',
+    pdfLine,
+    '',
+    'Qualquer dúvida, é só me chamar por aqui. 🙂',
+  ].join('\n');
+}
+
+/** Link oficial de compartilhamento (abre o app no celular ou o WhatsApp Web no computador). */
+export function whatsappShareUrl(phoneE164, text) {
+  // encodeURIComponent (espaço = %20): com "+" alguns clientes do WhatsApp mostram o sinal literal
+  const digits = (phoneE164 ?? '').replace(/\D/g, '');
+  const phone = digits ? `phone=${digits}&` : ''; // sem telefone: o WhatsApp pede para escolher o contato
+  return `https://api.whatsapp.com/send?${phone}text=${encodeURIComponent(text)}`;
+}
