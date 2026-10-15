@@ -37,7 +37,7 @@ export default function Logo({ tone = 'light', className = '', markClassName }) 
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <LogoMark className={markClassName} />
-      <span className={`text-xl font-extrabold tracking-tight ${tone === 'light' ? 'text-white' : 'text-stone-900'}`}>
+      <span className={`text-xl font-semibold tracking-tight ${tone === 'light' ? 'text-white' : 'text-stone-900'}`}>
         <span className="text-emerald-400">i</span>Valida
       </span>
     </span>

@@ -3,9 +3,9 @@ import { categoryInfo, fallbackEmoji } from '../../lib/categories.js';
 import { productPhotoUrl } from '../../lib/photos.js';
 
 const sizes = {
-  sm: { box: 'h-12 w-12 rounded-2xl', emoji: 'text-2xl' },
-  md: { box: 'h-14 w-14 rounded-2xl', emoji: 'text-3xl' },
-  lg: { box: 'h-20 w-20 rounded-3xl', emoji: 'text-5xl' },
+  sm: { box: 'h-11 w-11 rounded-xl', emoji: 'text-xl' },
+  md: { box: 'h-14 w-14 rounded-xl', emoji: 'text-2xl' },
+  lg: { box: 'h-16 w-16 rounded-xl', emoji: 'text-3xl' },
 };
 
 /**
@@ -27,7 +27,7 @@ export default function ProductThumb({ product, size = 'lg', previewSrc }) {
         data-category={product?.category ?? 'OTHER'}
         aria-hidden="true"
       >
-        <span className={`${s.emoji} leading-none drop-shadow-sm`}>{fallbackEmoji(product?.category, product?.name)}</span>
+        <span className={`${s.emoji} leading-none`}>{fallbackEmoji(product?.category, product?.name)}</span>
       </div>
     );
   }
@@ -38,7 +38,7 @@ export default function ProductThumb({ product, size = 'lg', previewSrc }) {
       alt={product?.name ?? ''}
       loading="lazy"
       onError={() => setFailed((n) => n + 1)}
-      className={`shrink-0 bg-white object-cover ring-2 ring-white shadow-sm ${s.box}`}
+      className={`shrink-0 bg-white object-cover ring-1 ring-stone-200 ${s.box}`}
     />
   );
 }

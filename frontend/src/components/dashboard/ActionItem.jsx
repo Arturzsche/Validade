@@ -3,14 +3,14 @@ import { describeDays } from '../ui/SemaphoreBadge.jsx';
 import { brl } from '../../lib/money.js';
 
 /**
- * Uma linha compacta, estilo lista de tarefas: produto, quando vence, quanto dinheiro está
- * parado e a ação. Produtos vencidos NÃO podem ser vendidos (CDC art. 18 §6º): em vez de
- * promoção, a orientação é tirar da prateleira.
+ * Uma linha compacta: produto, quando vence, quanto dinheiro está parado e a ação.
+ * Produtos vencidos NÃO podem ser vendidos (CDC art. 18 §6º): em vez de promoção,
+ * a orientação é tirar da prateleira.
  */
 export default function ActionItem({ batch, onPromo }) {
   const urgent = batch.semaphore === 'red';
   const canPromo = urgent && !batch.expired;
-  const dueClass = urgent ? 'text-red-600' : 'text-amber-700';
+  const dueClass = batch.expired ? 'text-red-700' : urgent ? 'text-red-600' : 'text-amber-700';
   const due = describeDays(batch.daysToExpiry);
   const value = brl(batch.valueAtRisk);
 
@@ -20,20 +20,20 @@ export default function ActionItem({ batch, onPromo }) {
         <button
           type="button"
           onClick={() => onPromo(batch)}
-          className={`inline-flex items-center gap-1.5 rounded-full bg-amber-300 font-extrabold text-amber-950 shadow-[0_3px_0_#d97706] transition-all active:translate-y-[2px] active:shadow-none motion-safe:md:hover:-translate-y-0.5 motion-safe:md:hover:rotate-[-2deg] md:hover:bg-amber-200 ${
-            compact ? 'h-8 px-3 text-[13px]' : 'h-9 px-4 text-sm'
+          className={`inline-flex items-center gap-1.5 rounded-lg bg-white font-medium text-stone-800 ring-1 ring-inset ring-stone-300 transition-colors hover:bg-stone-900 hover:text-white hover:ring-stone-900 active:bg-stone-800 active:text-white ${
+            compact ? 'h-8 px-2.5 text-[13px]' : 'h-9 px-3 text-sm'
           }`}
         >
           <TagIcon />
           {compact ? 'Promoção' : 'Criar promoção'}
         </button>
       )}
-      {batch.expired && <span className="rounded-full bg-stone-100 px-2.5 py-1 text-xs font-extrabold text-stone-600">🧺 Tirar da venda</span>}
+      {batch.expired && <span className="text-xs font-medium text-stone-500">Tirar da venda</span>}
     </>
   );
 
   return (
-    <li className="px-4 py-3 transition-colors sm:px-5 md:hover:bg-amber-50/60">
+    <li className="px-4 py-3 transition-colors sm:px-5 md:hover:bg-stone-50">
       {/* Celular: duas linhas — nome e valor em cima; quando vence, quantidade e ação embaixo */}
       <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 sm:hidden">
         <div className="row-span-2">
@@ -67,18 +67,12 @@ export default function ActionItem({ batch, onPromo }) {
   );
 }
 
-/** Etiqueta de preço com "%" no verde da marca — o mesmo símbolo do logo iValida. */
+/** Etiqueta de preço em traço (herda a cor do botão). */
 function TagIcon() {
   return (
-    <svg viewBox="0 0 20 20" className="h-4 w-4 text-amber-900" aria-hidden="true">
-      <path
-        d="M2.5 4.2v4.6c0 .5.2.9.5 1.2l6.6 6.6a1.7 1.7 0 0 0 2.4 0l4.6-4.6a1.7 1.7 0 0 0 0-2.4L10 3a1.7 1.7 0 0 0-1.2-.5H4.2c-.9 0-1.7.8-1.7 1.7Z"
-        fill="currentColor"
-      />
-      <circle cx="6" cy="6" r="1.1" fill="#fcd34d" />
-      <path d="M8.6 12.6l3.6-3.6" stroke="#fcd34d" strokeWidth="1.3" strokeLinecap="round" />
-      <circle cx="9" cy="9.3" r=".8" fill="#fcd34d" />
-      <circle cx="11.8" cy="12.2" r=".8" fill="#fcd34d" />
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+      <path d="M3 12V4.5A1.5 1.5 0 0 1 4.5 3H12l9 9-9 9Z" strokeLinejoin="round" />
+      <circle cx="7.5" cy="7.5" r="1.3" fill="currentColor" stroke="none" />
     </svg>
   );
 }

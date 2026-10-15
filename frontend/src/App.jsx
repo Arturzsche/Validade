@@ -35,7 +35,7 @@ export default function App() {
       <Route
         path="/catalogo"
         element={
-          <RequireAuth role="OWNER">
+          <RequireAuth>
             <CatalogPage />
           </RequireAuth>
         }

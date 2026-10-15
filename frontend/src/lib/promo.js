@@ -1,7 +1,6 @@
 // Promoção de queima de estoque: matemática em centavos + texto pronto para o WhatsApp
 // (*negrito*, ~riscado~ são a formatação nativa do WhatsApp).
 import { brl } from './money.js';
-import { formatDateBR } from './dates.js';
 
 export const DISCOUNT_OPTIONS = [20, 30, 40, 50];
 
@@ -26,22 +25,22 @@ export function promoNumbers(batch, discountPct) {
   };
 }
 
-export function buildPromoText({ batch, storeName, discountPct }) {
-  const { price, promoPrice } = promoNumbers(batch, discountPct);
-  const { product, quantity, expiryDate } = batch;
-  const name = product.brand && !product.name.toLowerCase().includes(product.brand.toLowerCase())
+/** Nome para divulgação: inclui a marca quando ela ainda não está no nome. */
+export function promoName(product) {
+  return product.brand && !product.name.toLowerCase().includes(product.brand.toLowerCase())
     ? `${product.name} ${product.brand}`
     : product.name;
+}
 
+/** Texto curto e direto para colar no WhatsApp/status (*negrito* e ~riscado~ do WhatsApp). */
+export function buildPromoText({ batch, storeName, discountPct }) {
+  const { price, promoPrice } = promoNumbers(batch, discountPct);
   return [
-    `🔥 *OFERTA RELÂMPAGO* 🔥`,
+    `🚨 *OFERTA RELÂMPAGO!*`,
     ``,
-    `*${name}*`,
-    `De ~${brl(price)}~ por apenas *${brl(promoPrice)}* (${discountPct}% OFF)`,
+    `*${promoName(batch.product)}* por apenas *${brl(promoPrice)}*! (de ~${brl(price)}~)`,
     ``,
-    `📅 Validade: ${formatDateBR(expiryDate)}`,
-    `📦 Só ${quantity} ${quantity === 1 ? 'unidade' : 'unidades'}, enquanto durar o estoque!`,
-    ``,
+    `⏳ Válido enquanto durar o estoque!`,
     `📍 ${storeName}`,
   ]
     .join('\n')

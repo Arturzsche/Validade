@@ -129,7 +129,7 @@ export default function BarcodeScanner({ onDetected, onManualEntry, ignoreCode }
   if (status === 'error') {
     const e = ERRORS[errorKind] ?? ERRORS.generic;
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 rounded-3xl bg-stone-900 px-6 py-10 text-center text-white">
+      <div className="flex h-full flex-col items-center justify-center gap-4 rounded-2xl bg-stone-900 px-6 py-10 text-center text-white">
         <CameraOffIcon />
         <div>
           <p className="text-lg font-bold">{e.title}</p>
@@ -150,7 +150,7 @@ export default function BarcodeScanner({ onDetected, onManualEntry, ignoreCode }
   }
 
   return (
-    <div className="relative h-full overflow-hidden rounded-3xl bg-black">
+    <div className="relative h-full overflow-hidden rounded-2xl bg-black">
       <video ref={videoRef} className="h-full w-full object-cover" muted playsInline autoPlay />
 
       {/* Moldura de mira: escurece tudo fora do retângulo */}

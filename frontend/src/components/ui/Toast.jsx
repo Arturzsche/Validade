@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 const tones = {
-  success: 'bg-emerald-500 text-white shadow-[0_4px_0_#047857]',
-  warning: 'bg-amber-300 text-amber-950 shadow-[0_4px_0_#d97706]',
-  error: 'bg-rose-500 text-white shadow-[0_4px_0_#be123c]',
+  success: 'bg-stone-900 text-white shadow-pop border-l-4 border-emerald-400',
+  warning: 'bg-stone-900 text-white shadow-pop border-l-4 border-amber-400',
+  error: 'bg-stone-900 text-white shadow-pop border-l-4 border-rose-500',
   info: 'bg-stone-800 text-white',
 };
 
@@ -24,9 +24,9 @@ export default function Toast({ toast, onDismiss, duration = 3500 }) {
         role="status"
         aria-live="polite"
         onClick={onDismiss}
-        className={`animate-toast-in pointer-events-auto w-full max-w-md rounded-3xl px-5 py-3.5 ${tones[toast.tone ?? 'info']}`}
+        className={`animate-toast-in pointer-events-auto w-full max-w-md rounded-xl px-5 py-3.5 ${tones[toast.tone ?? 'info']}`}
       >
-        <p className="font-extrabold">{toast.title}</p>
+        <p className="font-semibold">{toast.title}</p>
         {toast.message && <p className="mt-0.5 text-sm opacity-90">{toast.message}</p>}
       </div>
     </div>,

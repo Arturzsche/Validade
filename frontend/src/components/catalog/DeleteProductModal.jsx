@@ -29,11 +29,11 @@ export default function DeleteProductModal({ product, onClose, onDeleted }) {
       <div className="space-y-4">
         <p className="text-sm text-stone-600">
           Ele sai do catálogo. O histórico de validades continua guardado e, se você ler este código de barras de
-          novo, o produto volta. 👍
+          novo, o produto volta.
         </p>
         {onShelf && (
-          <p className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
-            ⚠️ Ainda há <strong>{product.activeBatches} {product.activeBatches === 1 ? 'registro' : 'registros'} na prateleira</strong>.
+          <p className="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200">
+            Ainda há <strong>{product.activeBatches} {product.activeBatches === 1 ? 'registro' : 'registros'} na prateleira</strong>.
             {product.activeBatches === 1 ? ' Ele continua' : ' Eles continuam'} no painel e nos alertas até você dar baixa, para
             nenhum vencimento passar despercebido.
           </p>
@@ -47,7 +47,7 @@ export default function DeleteProductModal({ product, onClose, onDeleted }) {
 
         <div className="flex flex-col gap-2">
           <Button variant="danger" block onClick={confirm} loading={deleting}>
-            🗑️ Excluir do catálogo
+            Excluir do catálogo
           </Button>
           <Button variant="ghost" block onClick={onClose} disabled={deleting}>
             Cancelar

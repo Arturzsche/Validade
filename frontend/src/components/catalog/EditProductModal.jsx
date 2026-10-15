@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Modal from '../ui/Modal.jsx';
 import Field from '../ui/Field.jsx';
+import { brl } from '../../lib/money.js';
 import MoneyInput from '../ui/MoneyInput.jsx';
 import Button from '../ui/Button.jsx';
 import ProductThumb from '../ui/ProductThumb.jsx';
@@ -10,8 +11,11 @@ import { api, errorMessage } from '../../lib/api.js';
 
 const toCents = (v) => (v == null ? null : Math.round(v * 100));
 
-/** Editar nome, preço de venda e custo. O pai monta com key={product.id}. */
-export default function EditProductModal({ product, onClose, onSaved, onPhotoChanged }) {
+/**
+ * Editar nome, categoria, foto, preço de venda e custo. O pai monta com key={product.id}.
+ * Operador (`canEditPrices` false) corrige cadastro e foto; preço e custo são decisão do dono.
+ */
+export default function EditProductModal({ product, onClose, onSaved, onPhotoChanged, canEditPrices = true }) {
   const [name, setName] = useState(product.name);
   const [priceCents, setPriceCents] = useState(toCents(product.price));
   const [costCents, setCostCents] = useState(toCents(product.costPrice));
@@ -43,7 +47,11 @@ export default function EditProductModal({ product, onClose, onSaved, onPhotoCha
     try {
       const updated = await api(`/products/${product.id}`, {
         method: 'PATCH',
-        body: { name: name.trim(), category, price: priceCents / 100, costPrice: costCents == null ? null : costCents / 100 },
+        body: {
+          name: name.trim(),
+          category,
+          ...(canEditPrices && { price: priceCents / 100, costPrice: costCents == null ? null : costCents / 100 }),
+        },
       });
       onSaved(updated);
     } catch (err) {
@@ -59,20 +67,29 @@ export default function EditProductModal({ product, onClose, onSaved, onPhotoCha
           <ProductThumb product={{ ...product, name, category, photoVersion }} size="md" />
           <div className="min-w-0 flex-1 text-sm">
             <p className="text-stone-500">Código de barras</p>
-            <p className="font-mono font-bold text-stone-900">{product.barcode}</p>
+            <p className="font-mono font-medium text-stone-900">{product.barcode}</p>
           </div>
           <PhotoButton onPhoto={uploadPhoto} hasPhoto={Boolean(photoVersion || product.imageUrl)} />
         </div>
 
         <Field label="Nome do produto" value={name} onChange={(e) => setName(e.target.value)} maxLength={120} error={nameError} />
         <CategoryPicker value={category} onChange={setCategory} />
-        <div className="grid grid-cols-2 gap-3">
-          <MoneyInput label="Preço de venda" cents={priceCents} onChangeCents={setPriceCents} error={priceError} />
-          <MoneyInput label="Preço de custo" cents={costCents} onChangeCents={setCostCents} hint="Opcional" />
-        </div>
-        <p className="text-sm text-stone-500">
-          O novo preço vale para as próximas promoções. Produtos já registrados mantêm o valor da entrada.
-        </p>
+        {canEditPrices ? (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <MoneyInput label="Preço de venda" cents={priceCents} onChangeCents={setPriceCents} error={priceError} />
+              <MoneyInput label="Preço de custo" cents={costCents} onChangeCents={setCostCents} hint="Opcional" />
+            </div>
+            <p className="text-sm text-stone-500">
+              O novo preço vale para as próximas promoções. Produtos já registrados mantêm o valor da entrada.
+            </p>
+          </>
+        ) : (
+          <p className="flex items-center justify-between rounded-xl bg-stone-50 px-4 py-3 text-sm text-stone-600 ring-1 ring-stone-200">
+            <span>Preço de venda · só o dono altera</span>
+            <span className="font-semibold tabular-nums text-stone-900">{brl(product.price)}</span>
+          </p>
+        )}
 
         {error && (
           <p role="alert" className="rounded-xl bg-red-50 px-3 py-2 text-sm font-medium text-red-700">

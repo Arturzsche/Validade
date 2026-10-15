@@ -6,7 +6,7 @@ const Field = forwardRef(function Field({ label, hint, error, className = '', in
   const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
     <div className={className}>
-      <label htmlFor={id} className="mb-1.5 block text-sm font-bold text-stone-700">
+      <label htmlFor={id} className="mb-1.5 block text-sm font-medium text-stone-700">
         {label}
       </label>
       <input
@@ -14,7 +14,7 @@ const Field = forwardRef(function Field({ label, hint, error, className = '', in
         id={id}
         aria-invalid={Boolean(error)}
         aria-describedby={describedBy}
-        className={`h-14 w-full rounded-2xl border-0 bg-white px-4 text-lg font-semibold text-stone-900 ring-2 ring-stone-200 transition-shadow placeholder:font-normal placeholder:text-stone-400 focus:ring-emerald-400 focus:shadow-[0_0_0_6px_rgb(52_211_153/0.15)] focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-500 ${inputClassName}`}
+        className={`h-14 w-full rounded-xl border-0 bg-white px-4 text-lg font-medium text-stone-900 ring-1 ring-inset ring-stone-300 transition-shadow placeholder:font-normal placeholder:text-stone-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none aria-[invalid=true]:ring-2 aria-[invalid=true]:ring-red-500 ${inputClassName}`}
         {...props}
       />
       {error ? (

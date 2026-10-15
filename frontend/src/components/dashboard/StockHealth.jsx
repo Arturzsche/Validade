@@ -18,15 +18,15 @@ export default function StockHealth({ zones }) {
     : 'Nenhum produto registrado';
 
   return (
-    <section aria-labelledby="health-title" className="motion-safe:animate-pop-in rounded-3xl bg-white p-4 shadow-card ring-1 ring-stone-900/5">
+    <section aria-labelledby="health-title" className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-stone-200">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 id="health-title" className="text-sm font-extrabold text-stone-700">
-          <span aria-hidden="true">🩺 </span>Saúde do estoque
+        <h3 id="health-title" className="text-sm font-medium text-stone-700">
+          Saúde do estoque
         </h3>
         <p className="text-sm text-stone-500">
           {total ? (
             <>
-              <span className="text-xl font-black tabular-nums text-stone-900">{healthy}%</span> em dia
+              <span className="text-xl font-semibold tabular-nums text-stone-900">{healthy}%</span> em dia
             </>
           ) : (
             'sem itens ainda'
@@ -34,7 +34,7 @@ export default function StockHealth({ zones }) {
         </p>
       </div>
 
-      <div role="img" aria-label={`Saúde do estoque. ${summary}`} className="mt-3 flex h-4 gap-[3px] overflow-hidden rounded-full bg-stone-100 p-0.5">
+      <div role="img" aria-label={`Saúde do estoque. ${summary}`} className="mt-3 flex h-2 gap-0.5 overflow-hidden rounded-full bg-stone-100">
         {total > 0 &&
           SEGMENTS.filter((s) => counts[s.key] > 0).map((s) => (
             <span
@@ -46,11 +46,11 @@ export default function StockHealth({ zones }) {
           ))}
       </div>
 
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm font-semibold text-stone-600">
+      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-stone-600">
         {SEGMENTS.map((s) => (
           <li key={s.key} className="inline-flex items-center gap-1.5">
             <span className={`h-2 w-2 rounded-full ${s.color}`} aria-hidden="true" />
-            {s.label} <span className="font-black tabular-nums text-stone-900">{counts[s.key]}</span>
+            {s.label} <span className="font-semibold tabular-nums text-stone-900">{counts[s.key]}</span>
           </li>
         ))}
       </ul>

@@ -35,12 +35,12 @@ export default function DashboardPage() {
   );
 
   return (
-    <AppShell title="Painel" width="wide" actions={refreshButton}>
-      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6 md:space-y-8 md:py-10">
+    <AppShell title="Painel" actions={refreshButton}>
+      <main className="mx-auto max-w-5xl space-y-6 px-4 py-6 md:space-y-10 md:py-10">
         {loading && <DashboardSkeleton />}
 
         {!loading && error && !data && (
-          <div className="rounded-3xl bg-white px-6 py-10 text-center shadow-card ring-1 ring-stone-900/5">
+          <div className="rounded-2xl bg-white px-6 py-10 text-center ring-1 ring-stone-200">
             <p className="font-semibold text-stone-900">Não foi possível carregar o painel</p>
             <p className="mt-1 text-sm text-stone-500">{error}</p>
             <Button className="mt-5" size="md" onClick={refresh}>

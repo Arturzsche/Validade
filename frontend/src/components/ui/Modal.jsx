@@ -33,12 +33,12 @@ export default function Modal({ open, onClose, title, subtitle, children, dismis
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="animate-sheet-up relative max-h-[92dvh] w-full overflow-y-auto rounded-t-[2rem] bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-w-md sm:rounded-[2rem] sm:pb-6"
+        className="animate-sheet-up relative max-h-[92dvh] w-full overflow-y-auto rounded-t-2xl bg-white px-5 pt-3 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-2xl sm:max-w-md sm:rounded-2xl sm:pb-6"
       >
-        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-amber-200 sm:hidden" aria-hidden="true" />
+        <div className="mx-auto mb-4 h-1.5 w-12 rounded-full bg-stone-300 sm:hidden" aria-hidden="true" />
         <header className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 id={titleId} className="text-xl font-black text-stone-900">
+            <h2 id={titleId} className="text-lg font-semibold text-stone-900">
               {title}
             </h2>
             {subtitle && <p className="mt-1 text-sm text-stone-500">{subtitle}</p>}

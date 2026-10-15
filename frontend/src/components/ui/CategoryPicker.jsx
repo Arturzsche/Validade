@@ -15,13 +15,13 @@ export default function CategoryPicker({ value, onChange, label = 'Categoria' })
               role="radio"
               aria-checked={selected}
               onClick={() => onChange(c.value)}
-              className={`flex flex-col items-center gap-1 rounded-2xl px-1 py-2.5 text-xs font-bold transition-all duration-150 motion-safe:active:scale-95 ${
+              className={`flex flex-col items-center gap-1 rounded-xl px-1 py-2.5 text-xs font-medium transition-colors duration-150 ${
                 selected
-                  ? `${c.tile} ${c.text} ring-2 ${c.ring} motion-safe:scale-105 shadow-sm`
-                  : 'bg-stone-100 text-stone-600 md:hover:bg-stone-200'
+                  ? `${c.tile} ${c.text} ring-2 `
+                  : 'bg-white text-stone-600 ring-1 ring-inset ring-stone-200 hover:bg-stone-50'
               }`}
             >
-              <span className={`text-2xl leading-none ${selected ? 'motion-safe:animate-wiggle' : ''}`} aria-hidden="true">
+              <span className="text-xl leading-none" aria-hidden="true">
                 {c.emoji}
               </span>
               {c.label}

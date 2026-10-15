@@ -2,11 +2,11 @@
 import { productCategory } from './productCategory.js';
 
 export const CATEGORIES = [
-  { value: 'FOOD', label: 'Comidas', emoji: '🥫', tile: 'bg-orange-100', ring: 'ring-orange-300', text: 'text-orange-800' },
-  { value: 'DRINKS', label: 'Bebidas', emoji: '🧃', tile: 'bg-sky-100', ring: 'ring-sky-300', text: 'text-sky-800' },
-  { value: 'CLEANING', label: 'Limpeza', emoji: '🧼', tile: 'bg-violet-100', ring: 'ring-violet-300', text: 'text-violet-800' },
-  { value: 'PETS', label: 'Pets', emoji: '🐶', tile: 'bg-amber-100', ring: 'ring-amber-300', text: 'text-amber-800' },
-  { value: 'OTHER', label: 'Outros', emoji: '📦', tile: 'bg-lime-100', ring: 'ring-lime-300', text: 'text-lime-800' },
+  { value: 'FOOD', label: 'Comidas', emoji: '🥫', tile: 'bg-orange-50', ring: 'ring-orange-300', text: 'text-orange-800' },
+  { value: 'DRINKS', label: 'Bebidas', emoji: '🧃', tile: 'bg-sky-50', ring: 'ring-sky-300', text: 'text-sky-800' },
+  { value: 'CLEANING', label: 'Limpeza', emoji: '🧼', tile: 'bg-violet-50', ring: 'ring-violet-300', text: 'text-violet-800' },
+  { value: 'PETS', label: 'Pets', emoji: '🐶', tile: 'bg-amber-50', ring: 'ring-amber-300', text: 'text-amber-800' },
+  { value: 'OTHER', label: 'Outros', emoji: '📦', tile: 'bg-lime-50', ring: 'ring-lime-300', text: 'text-lime-800' },
 ];
 
 const BY_VALUE = Object.fromEntries(CATEGORIES.map((c) => [c.value, c]));

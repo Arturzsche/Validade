@@ -10,8 +10,11 @@ import { daysBetween, formatDateBR, parseNativeDate, semaphoreFor, todayIso, yea
  * A validade usa o calendário nativo do celular (iOS/Android) — nada de digitar barras.
  * Embalagem com só mês/ano? Um toque troca para o seletor de mês (vale o último dia).
  * Mostra em tempo real em que cor do semáforo o produto vai cair.
+ *
+ * Modo metralhadora: a validade já vem focada (digite a data e aperte Enter para salvar);
+ * Esc cancela e volta para o código de barras.
  */
-export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit, onCancel }) {
+export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit, onCancel, autoFocusDate = false }) {
   const [expiryValue, setExpiryValue] = useState('');
   const [monthOnly, setMonthOnly] = useState(false);
   const [quantity, setQuantity] = useState(1);
@@ -47,7 +50,12 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
   }
 
   return (
-    <form onSubmit={submit} className="space-y-5" noValidate>
+    <form
+      onSubmit={submit}
+      onKeyDown={(e) => e.key === 'Escape' && !saving && onCancel()}
+      className="space-y-5"
+      noValidate
+    >
       <div>
         <Field
           key={monthOnly ? 'month' : 'date'}
@@ -57,13 +65,15 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
           value={expiryValue}
           onChange={(e) => setExpiryValue(e.target.value)}
           onClick={openPicker}
+          autoFocus={autoFocusDate}
+          enterKeyHint="done"
           error={showDateError ? parsed.error : null}
           inputClassName="appearance-none text-xl font-bold tabular-nums [&::-webkit-date-and-time-value]:text-left"
         />
         <button
           type="button"
           onClick={toggleMonthOnly}
-          className="mt-2 text-sm font-medium text-emerald-700 underline-offset-2 active:underline md:hover:underline"
+          className="mt-2 text-sm text-stone-500 underline underline-offset-2 hover:text-stone-800"
         >
           {monthOnly ? 'A embalagem tem o dia: escolher data completa' : 'A embalagem só tem mês e ano?'}
         </button>
@@ -79,7 +89,7 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
 
       {expired && (
         <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-red-200">
-          Esta data já passou. O produto será registrado como <strong>vencido</strong> e o dono será avisado.
+          Esta data já passou. O produto será registrado como <strong>vencido</strong> e entra no relatório do dono.
         </p>
       )}
 
@@ -92,9 +102,10 @@ export default function BatchEntryForm({ thresholds, saving, apiError, onSubmit,
       <div className="flex flex-col gap-3 pt-1">
         <Button type="submit" variant={expired ? 'danger' : 'primary'} loading={saving} block>
           {expired ? 'Registrar como vencido' : 'Salvar'}
+          <span className="hidden text-sm font-normal opacity-70 sm:inline">(Enter)</span>
         </Button>
         <Button variant="ghost" onClick={onCancel} disabled={saving} block>
-          Cancelar e ler outro
+          Cancelar <span className="hidden text-stone-400 sm:inline">(Esc)</span>
         </Button>
       </div>
     </form>

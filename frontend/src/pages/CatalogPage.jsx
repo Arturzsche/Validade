@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { useAuth } from '../context/AuthContext.jsx';
 import { Link } from 'react-router-dom';
 import { useCatalog } from '../hooks/useCatalog.js';
 import AppShell from '../components/layout/AppShell.jsx';
@@ -8,8 +9,13 @@ import DeleteProductModal from '../components/catalog/DeleteProductModal.jsx';
 import Button from '../components/ui/Button.jsx';
 import Toast from '../components/ui/Toast.jsx';
 
-/** Tela 3 — Catálogo: todos os produtos já registrados na loja, com edição e exclusão. */
+/**
+ * Tela 3 — Catálogo: todos os produtos já registrados na loja, com edição e exclusão.
+ * Operador vê e corrige o cadastro (sem custo, sem alterar preço, sem excluir).
+ */
 export default function CatalogPage() {
+  const { session } = useAuth();
+  const isOwner = session.user.role === 'OWNER';
   const [search, setSearch] = useState('');
   const catalog = useCatalog(search);
   const [editing, setEditing] = useState(null);
@@ -20,12 +26,12 @@ export default function CatalogPage() {
   const count = `${catalog.total} ${catalog.total === 1 ? 'produto' : 'produtos'}`;
 
   return (
-    <AppShell title="Catálogo" width="wide">
+    <AppShell title="Catálogo">
       <main className="mx-auto max-w-3xl space-y-5 px-4 py-6 md:py-10">
         <header className="flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h1 className="text-3xl font-black tracking-tight text-stone-900"><span aria-hidden="true">📒 </span>Catálogo</h1>
-            <p className="mt-1 text-sm font-semibold text-stone-500">
+            <h1 className="text-2xl font-semibold tracking-tight text-stone-900">Catálogo</h1>
+            <p className="mt-1 text-sm text-stone-500">
               {search.trim()
                 ? `${count} ${catalog.total === 1 ? 'encontrado' : 'encontrados'}`
                 : `${count} ${catalog.total === 1 ? 'cadastrado' : 'cadastrados'} na loja`}
@@ -35,7 +41,7 @@ export default function CatalogPage() {
 
         <label className="relative block">
           <span className="sr-only">Buscar produto</span>
-          <svg viewBox="0 0 20 20" className="pointer-events-none absolute top-1/2 left-5 h-5 w-5 -translate-y-1/2 text-stone-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+          <svg viewBox="0 0 20 20" className="pointer-events-none absolute top-1/2 left-3.5 h-5 w-5 -translate-y-1/2 text-stone-400" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
             <circle cx="9" cy="9" r="5.5" />
             <path d="m13.5 13.5 3 3" strokeLinecap="round" />
           </svg>
@@ -44,14 +50,14 @@ export default function CatalogPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar por nome ou código de barras"
-            className="h-14 w-full rounded-full border-0 bg-white pr-5 pl-12 font-semibold text-stone-900 shadow-card ring-2 ring-stone-100 placeholder:font-normal placeholder:text-stone-400 focus:ring-emerald-400 focus:outline-none"
+            className="h-12 w-full rounded-xl border-0 bg-white pr-4 pl-11 text-stone-900 ring-1 ring-inset ring-stone-300 placeholder:text-stone-400 focus:ring-2 focus:ring-emerald-500 focus:outline-none"
           />
         </label>
 
         {catalog.error && !catalog.items.length && (
-          <div className="rounded-3xl bg-white px-6 py-10 text-center shadow-card ring-1 ring-stone-900/5">
+          <div className="rounded-2xl bg-white px-6 py-10 text-center shadow-card ring-1 ring-stone-200">
             <p className="font-semibold text-stone-900">Não foi possível carregar o catálogo</p>
-            <p className="mt-1 text-sm font-semibold text-stone-500">{catalog.error}</p>
+            <p className="mt-1 text-sm text-stone-500">{catalog.error}</p>
             <Button className="mt-5" size="md" onClick={catalog.reload}>
               Tentar de novo
             </Button>
@@ -59,22 +65,21 @@ export default function CatalogPage() {
         )}
 
         {!catalog.loading && !catalog.error && catalog.items.length === 0 && (
-          <div className="rounded-3xl bg-white px-6 py-12 text-center shadow-card ring-1 ring-stone-900/5">
+          <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-card ring-1 ring-stone-200">
             {search.trim() ? (
               <>
                 <p className="font-semibold text-stone-900">Nenhum produto encontrado</p>
-                <p className="mt-1 text-sm font-semibold text-stone-500">Confira o nome ou o código de barras.</p>
+                <p className="mt-1 text-sm text-stone-500">Confira o nome ou o código de barras.</p>
               </>
             ) : (
               <>
-                <p className="text-5xl motion-safe:animate-float" aria-hidden="true">🛒</p>
-                <p className="mt-2 font-black text-stone-900">Seu catálogo está vazio</p>
-                <p className="mt-1 text-sm font-semibold text-stone-500">
+                <p className="font-semibold text-stone-900">Seu catálogo está vazio</p>
+                <p className="mt-1 text-sm text-stone-500">
                   Os produtos entram aqui automaticamente quando você registra a validade pela primeira vez.
                 </p>
                 <Link
                   to="/entrada"
-                  className="mt-5 inline-flex h-12 items-center rounded-2xl bg-emerald-500 px-6 font-extrabold text-white shadow-[0_4px_0_#047857] active:translate-y-[3px] active:shadow-none"
+                  className="mt-5 inline-flex h-12 items-center rounded-xl bg-emerald-600 px-6 font-semibold text-white hover:bg-emerald-700"
                 >
                   Registrar um produto
                 </Link>
@@ -87,12 +92,12 @@ export default function CatalogPage() {
           <ul
             aria-label="Produtos do catálogo"
             aria-busy={catalog.loading}
-            className={`divide-y-2 divide-dashed divide-stone-100 overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5 transition-opacity ${
+            className={`divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-stone-200 transition-opacity ${
               catalog.loading ? 'opacity-60' : ''
             }`}
           >
             {catalog.items.map((product) => (
-              <CatalogItem key={product.id} product={product} onEdit={setEditing} onDelete={setDeleting} />
+              <CatalogItem key={product.id} product={product} onEdit={setEditing} onDelete={isOwner ? setDeleting : undefined} />
             ))}
           </ul>
         )}
@@ -112,6 +117,7 @@ export default function CatalogPage() {
         <EditProductModal
           key={editing.id}
           product={editing}
+          canEditPrices={isOwner}
           onClose={() => setEditing(null)}
           onPhotoChanged={(updated) => catalog.replace(updated)}
           onSaved={(updated) => {

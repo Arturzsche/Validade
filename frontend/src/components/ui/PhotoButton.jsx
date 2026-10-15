@@ -33,12 +33,19 @@ export default function PhotoButton({ onPhoto, hasPhoto = false, busy = false, c
         type="button"
         onClick={() => input.current?.click()}
         disabled={working}
-        className="inline-flex h-10 items-center gap-1.5 rounded-full bg-amber-100 px-4 text-sm font-bold text-amber-900 shadow-sm ring-1 ring-amber-200 transition-transform duration-150 motion-safe:active:scale-95 disabled:opacity-60 md:hover:bg-amber-200 motion-safe:md:hover:-translate-y-0.5"
+        className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-white px-3.5 text-sm font-medium text-stone-700 ring-1 ring-inset ring-stone-300 transition-colors hover:bg-stone-50 active:bg-stone-100 disabled:opacity-60"
       >
-        <span aria-hidden="true">📸</span>
+        <CameraIcon />
         {working ? 'Salvando foto…' : hasPhoto ? 'Trocar foto' : 'Tirar foto'}
       </button>
       {error && <p className="mt-1 text-xs font-medium text-red-600">{error}</p>}
     </div>
   );
 }
+
+const CameraIcon = () => (
+  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+    <path d="M4 8a2 2 0 0 1 2-2h1.5l1.5-2h6l1.5 2H18a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z" strokeLinejoin="round" />
+    <circle cx="12" cy="12.5" r="3.2" />
+  </svg>
+);

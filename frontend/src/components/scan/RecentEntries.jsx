@@ -13,13 +13,13 @@ export default function RecentEntries({ entries }) {
 
   return (
     <section>
-      <h2 className="mb-2 px-1 text-sm font-extrabold uppercase tracking-wide text-stone-500">✅ Registrados agora</h2>
-      <ul className="divide-y-2 divide-dashed divide-stone-100 overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-stone-900/5">
+      <h2 className="mb-2 px-1 text-sm font-medium text-stone-500">Registrados agora</h2>
+      <ul className="divide-y divide-stone-100 overflow-hidden rounded-2xl bg-white shadow-card ring-1 ring-stone-200">
         {entries.map((b) => (
           <li key={`${b.id}-${b.updatedAt}`} className="flex items-center gap-3 px-4 py-3">
-            <span className={`h-3 w-3 shrink-0 rounded-full ${semaphoreStyles[b.semaphore].dot}`} aria-label={semaphoreStyles[b.semaphore].label} />
+            <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${semaphoreStyles[b.semaphore].dot}`} aria-label={semaphoreStyles[b.semaphore].label} />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold text-stone-900">{b.product.name}</p>
+              <p className="truncate font-medium text-stone-900">{b.product.name}</p>
               <p className="text-sm text-stone-500">
                 Val. {formatDateBR(b.expiryDate)} · {b.addedQuantity} un.
                 {b.merged && <span> · somado (total {b.quantity})</span>}

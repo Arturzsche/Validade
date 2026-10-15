@@ -35,18 +35,17 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-dvh flex-col pb-8">
-      <div className="awning" aria-hidden="true" />
       <div className="px-5 pt-[max(2.5rem,env(safe-area-inset-top))]">
       <div className="mx-auto w-full max-w-sm">
         <div className="mb-7 text-center">
-          <LogoMark className="mx-auto mb-3 h-20 w-20 motion-safe:animate-float" />
-          <h1 className="text-4xl font-black tracking-tight text-stone-900">
+          <LogoMark className="mx-auto mb-3 h-14 w-14" />
+          <h1 className="text-4xl font-bold tracking-tight text-stone-900">
             <span className="text-emerald-500">i</span>Valida
           </h1>
-          <p className="mt-2 font-semibold text-stone-500">Nada vence esquecido na prateleira. 🛒</p>
+          <p className="mt-2 font-semibold text-stone-500">Nada vence esquecido na prateleira.</p>
         </div>
 
-        <form onSubmit={submit} className="motion-safe:animate-pop-in space-y-4 rounded-[2rem] bg-white p-6 shadow-pop ring-1 ring-stone-900/5">
+        <form onSubmit={submit} className="space-y-4 rounded-2xl bg-white p-6 shadow-card ring-1 ring-stone-200">
           {mode === 'register' && (
             <>
               <Field label="Nome da loja" required value={form.storeName} onChange={set('storeName')} autoComplete="organization" />
@@ -92,7 +91,7 @@ export default function LoginPage() {
             setMode(mode === 'login' ? 'register' : 'login');
             setError(null);
           }}
-          className="mt-6 block h-12 w-full rounded-full text-center font-extrabold text-emerald-700 active:bg-emerald-50 md:hover:bg-emerald-50"
+          className="mt-6 block h-12 w-full rounded-full text-center font-semibold text-emerald-700 active:bg-emerald-50 md:hover:bg-emerald-50"
         >
           {mode === 'login' ? 'Primeira vez? Cadastre sua loja' : 'Já tenho conta'}
         </button>

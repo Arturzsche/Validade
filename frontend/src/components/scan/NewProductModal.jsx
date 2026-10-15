@@ -89,15 +89,15 @@ export default function NewProductModal({ open, barcode, initial, suggestion, on
         />
 
         {onPhoto && (
-          <div className="flex items-center gap-3 rounded-3xl bg-amber-50 p-3 ring-1 ring-amber-200">
+          <div className="flex items-center gap-3 rounded-xl bg-stone-50 p-3 ring-1 ring-stone-200">
             <ProductThumb
               product={{ name, category, imageUrl: initial?.imageUrl ?? suggestion?.imageUrl }}
               previewSrc={photoPreview}
               size="md"
             />
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold text-amber-900">{photoPreview ? 'Foto pronta! 🎉' : 'Sem foto? Sem problema.'}</p>
-              <p className="text-xs text-amber-800">
+              <p className="text-sm font-medium text-stone-900">{photoPreview ? 'Foto pronta' : 'Sem foto? Sem problema.'}</p>
+              <p className="text-xs text-stone-500">
                 {photoPreview ? 'Ela aparece no painel e no catálogo.' : 'Usamos o emoji da categoria, ou tire uma foto da embalagem.'}
               </p>
             </div>

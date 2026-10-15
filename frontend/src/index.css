@@ -1,21 +1,19 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Nunito: arredondada, amigável e muito legível no celular */
-  --font-sans: 'Nunito', ui-rounded, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  /* Inter: neutra, muito legível em números (tabular) e com cara de produto profissional */
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 
-  /* Creme de papel de pão + sombras quentes (marrom), nada de cinza "de banco" */
-  --color-cream: #fff8ec;
-  --shadow-card: 0 2px 0 rgb(120 53 15 / 0.05), 0 12px 28px -14px rgb(120 53 15 / 0.22);
-  --shadow-pop: 0 4px 0 rgb(120 53 15 / 0.08), 0 16px 36px -16px rgb(120 53 15 / 0.3);
+  /* Fundo cinza bem claro, cards brancos e sombras quase imperceptíveis */
+  --color-canvas: #f6f7f8;
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.04);
+  --shadow-pop: 0 1px 2px rgb(16 24 40 / 0.05), 0 8px 24px -8px rgb(16 24 40 / 0.16);
+  --shadow-header: 0 1px 0 rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.04);
 
   --animate-scanline: scanline 2s ease-in-out infinite;
-  --animate-sheet-up: sheet-up 260ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  --animate-sheet-up: sheet-up 220ms cubic-bezier(0.2, 0.8, 0.2, 1);
   --animate-fade-in: fade-in 160ms ease-out;
-  --animate-toast-in: toast-in 380ms cubic-bezier(0.2, 0.9, 0.3, 1.35);
-  --animate-pop-in: pop-in 320ms cubic-bezier(0.2, 0.9, 0.3, 1.3) both;
-  --animate-wiggle: wiggle 420ms ease-in-out;
-  --animate-float: float 3.2s ease-in-out infinite;
+  --animate-toast-in: toast-in 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
 
   @keyframes scanline {
     0%, 100% { top: 8%; }
@@ -30,21 +28,8 @@
     to { opacity: 1; }
   }
   @keyframes toast-in {
-    from { transform: translateY(-120%) scale(0.9); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-  }
-  @keyframes pop-in {
-    from { transform: translateY(6px) scale(0.97); opacity: 0; }
-    to { transform: translateY(0) scale(1); opacity: 1; }
-  }
-  @keyframes wiggle {
-    0%, 100% { transform: rotate(0); }
-    25% { transform: rotate(-12deg) scale(1.15); }
-    75% { transform: rotate(10deg) scale(1.1); }
-  }
-  @keyframes float {
-    0%, 100% { transform: translateY(0) rotate(-2deg); }
-    50% { transform: translateY(-6px) rotate(2deg); }
+    from { transform: translateY(-16px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
   }
 }
 
@@ -53,10 +38,8 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-cream text-stone-800 antialiased;
-    /* bolinhas bem sutis, como papel de embrulho de vendinha */
-    background-image: radial-gradient(rgb(180 120 60 / 0.07) 1.2px, transparent 1.2px);
-    background-size: 22px 22px;
+    @apply bg-canvas text-stone-800 antialiased;
+    font-feature-settings: 'cv11', 'ss01';
     overscroll-behavior-y: none;
   }
   h1, h2, h3 {
@@ -68,18 +51,21 @@
   }
 }
 
-@layer components {
-  /* Toldo listrado da fachada (verde iValida + creme) com borda ondulada */
-  .awning {
-    /* faixas verde/branco de 22px; cada faixa termina num semicírculo (borda ondulada) */
-    height: 20px;
-    background: repeating-linear-gradient(90deg, #10b981 0 22px, #ffffff 22px 44px);
-    -webkit-mask:
-      linear-gradient(#000 0 0) top / 100% 9px no-repeat,
-      radial-gradient(circle 11px at 50% 0, #000 98%, transparent 100%) 0 9px / 22px 11px repeat-x;
-    mask:
-      linear-gradient(#000 0 0) top / 100% 9px no-repeat,
-      radial-gradient(circle 11px at 50% 0, #000 98%, transparent 100%) 0 9px / 22px 11px repeat-x;
-    filter: drop-shadow(0 2px 1px rgb(120 53 15 / 0.12));
+/* Etiqueta de gôndola: só ela aparece na impressão (o resto da página some) */
+.print-only {
+  display: none;
+}
+@media print {
+  @page {
+    margin: 10mm;
+  }
+  body {
+    background: #fff !important;
+  }
+  body > * {
+    display: none !important;
+  }
+  body > .print-only {
+    display: block !important;
   }
 }

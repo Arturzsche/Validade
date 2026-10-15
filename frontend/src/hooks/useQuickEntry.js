@@ -16,7 +16,7 @@ const initial = {
   product: null, // produto já cadastrado (GET /products/barcode/:code)
   draft: null, // rascunho de produto novo (vai junto no POST /batches)
   suggestion: null, // dados do Open Food Facts
-  modal: null, // null | 'manual' | 'newProduct'
+  modal: null, // null | 'newProduct'
   pendingEntry: null, // lote aguardando o cadastro do produto (fluxo 422)
   photo: null, // { blob, previewUrl, uploaded } — foto tirada no celular
   photoBusy: false,
@@ -181,8 +181,6 @@ export function useQuickEntry({ onSaved, onError }) {
     reset,
     submitNewProduct,
     closeNewProduct,
-    openManual: () => patch({ modal: 'manual' }),
-    closeModal: () => patch({ modal: null }),
     editDraft: () => patch({ modal: 'newProduct' }),
   };
 }
