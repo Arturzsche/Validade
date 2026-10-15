@@ -13,7 +13,9 @@ export function createApp() {
   app.use(cors({ origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(',') }));
   app.use(express.json({ limit: '100kb' }));
 
-  app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+  // `version` = commit em execução (o Railway injeta RAILWAY_GIT_COMMIT_SHA): confere qual código está no ar
+  const version = (process.env.RAILWAY_GIT_COMMIT_SHA ?? process.env.GIT_COMMIT_SHA ?? 'dev').slice(0, 7);
+  app.get('/health', (_req, res) => res.json({ status: 'ok', version }));
   app.use('/api', routes);
 
   app.use(notFoundHandler);

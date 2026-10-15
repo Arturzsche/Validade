@@ -53,7 +53,9 @@ export async function api(path, { method = 'GET', body, signal } = {}) {
 /** Primeira mensagem legível de um erro (inclui detalhes de validação do backend). */
 export function errorMessage(err) {
   if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.details?.length) {
-    return err.details[0].message;
+    // Com o nome do campo: "email: ..." deixa claro o que corrigir (e denuncia API e app desalinhados)
+    const { path, message } = err.details[0];
+    return path ? `${path}: ${message}` : message;
   }
   return err?.message ?? 'Algo deu errado';
 }
