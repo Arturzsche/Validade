@@ -98,6 +98,12 @@ npm install
 npm run dev                     # :5173 (o Vite repassa /api para localhost:3333)
 ```
 
+### Criar as tabelas sem terminal (SQL Editor do Neon)
+
+`backend/prisma/neon-init.sql` é a migration inicial pronta para colar no SQL Editor do Neon
+(cria o schema, as tabelas e registra a migration para o Prisma não tentar aplicá-la de novo).
+Rode uma única vez, num banco vazio.
+
 ### Zerar o banco antigo no Neon
 
 As migrations recomeçaram do zero. Num banco que ainda tem as tabelas do iValida, rode **uma vez**

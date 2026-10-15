@@ -9,7 +9,7 @@
   },
   "scripts": {
     "dev": "prisma migrate deploy && node --watch src/server.js",
-    "start": "node src/server.js",
+    "start": "prisma migrate deploy && node src/server.js",
     "test": "node --test",
     "db:seed": "node prisma/seed.js",
     "prisma:validate": "prisma validate",
@@ -17,7 +17,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio",
-    "start:prod": "prisma migrate deploy && node src/server.js",
+    "start:prod": "npm start",
     "postinstall": "prisma generate"
   },
   "prisma": {
